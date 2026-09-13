@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -56,6 +56,7 @@ const heroMessages = [
 function Home() {
   const [selected, setSelected] = useState<CatalogProduct | null>(null);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [catalogView, setCatalogView] = useState<'large' | 'compact'>('large');
@@ -100,6 +101,26 @@ function Home() {
     return () => window.clearInterval(timer);
   }, [heroProducts.length]);
 
+  useEffect(() => {
+    if (!mobileMenu) return;
+
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMobileMenu(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenu(false);
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [mobileMenu]);
+
   if (!heroProduct) return null;
 
   const featuredProducts = filteredProducts.filter((product) => product.featured);
@@ -112,7 +133,7 @@ function Home() {
         <span>فحص شامل قبل البيع</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تجربة 7 أيام</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تواصل مباشر عبر واتساب</span>
       </div>
 
-      <header className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
+      <header ref={headerRef} className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
           <a href="#top" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
             <span className="logo-frame grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.8)] bg-white">
@@ -134,8 +155,8 @@ function Home() {
             <button onClick={() => openWhatsApp()} className="focus-ring hidden items-center gap-2 border border-[hsl(var(--primary))] px-4 py-3 text-xs font-bold text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] sm:inline-flex">
               <MessageCircle size={15} /> تواصل الآن
             </button>
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="focus-ring grid h-11 w-11 place-items-center border border-[hsl(var(--border))] md:hidden" aria-expanded={mobileMenu} aria-label="فتح القائمة">
-              <Menu size={19} />
+            <button onClick={() => setMobileMenu((open) => !open)} className="focus-ring grid h-11 w-11 place-items-center border border-[hsl(var(--border))] md:hidden" aria-expanded={mobileMenu} aria-controls="mobile-navigation" aria-label={mobileMenu ? 'إغلاق القائمة' : 'فتح القائمة'}>
+              {mobileMenu ? <X size={19} /> : <Menu size={19} />}
             </button>
             <a href="#products" className="focus-ring hidden h-11 w-11 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--foreground)/.72)] sm:grid" aria-label="المنتجات">
               <ShoppingBag size={18} />
@@ -143,7 +164,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-7 gap-y-4 px-5 pb-4 lg:px-10">
+        <div className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-7 gap-y-4 px-5 pb-4 lg:px-10 md:flex">
           <span className="hidden shrink-0 items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.5)] md:inline-flex"><SlidersHorizontal size={14} /> تصفح حسب</span>
           {categoryOptions.map((category) => (
             <button key={category.key} onClick={() => selectCategory(category.key)} className={`category-link focus-ring text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>
@@ -154,16 +175,21 @@ function Home() {
         </div>
 
         {mobileMenu && (
-          <div className="border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 md:hidden">
+          <div id="mobile-navigation" className="mobile-menu-panel absolute inset-x-0 top-full border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 md:hidden">
             <form className="store-search mb-4 flex items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
               <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
               <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" />
             </form>
-            <div className="flex flex-wrap gap-x-5 gap-y-4 text-xs font-bold">
-              <a href="#promise" onClick={() => setMobileMenu(false)}>وعد نجم عدن</a>
-              <a href="#contact" onClick={() => setMobileMenu(false)}>تواصل معنا</a>
-              <button onClick={() => { setMobileMenu(false); openWhatsApp(); }} className="text-[hsl(var(--secondary-foreground))]">استفسار عبر واتساب</button>
-            </div>
+            <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
+              {categoryOptions.map((category) => (
+                <button key={category.key} onClick={() => selectCategory(category.key)} className={`mobile-menu-link ${activeCategory === category.key ? 'active' : ''}`} aria-current={activeCategory === category.key ? 'page' : undefined}>
+                  {category.label}
+                </button>
+              ))}
+              <a href="#promise" onClick={() => setMobileMenu(false)} className="mobile-menu-link">لماذا نجم عدن؟</a>
+              <a href="#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link">تواصل معنا</a>
+              <button onClick={() => { setMobileMenu(false); openWhatsApp(); }} className="mobile-menu-link accent">استفسار عبر واتساب</button>
+            </nav>
           </div>
         )}
       </header>
