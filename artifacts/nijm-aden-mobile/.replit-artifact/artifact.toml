@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "نجم عدن موبايل"
+description = "A luxury Arabic RTL mobile catalog for Nijm Aden Mobile, showcasing curated phones and wireless accessories with a WhatsApp-first inquiry flow."
+version = "1.0.0"
+id = "artifacts/nijm-aden-mobile"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25083
+
+[services.development]
+run = "pnpm --filter @workspace/nijm-aden-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nijm-aden-mobile", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/nijm-aden-mobile/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25083"
+BASE_PATH = "/"
