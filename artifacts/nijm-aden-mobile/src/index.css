@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@500;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -58,7 +58,7 @@
   --destructive-foreground: 42 36% 96%;
   --input: 39 23% 79%;
   --ring: 39 58% 55%;
-  --app-font-sans: 'Cairo', sans-serif;
+  --app-font-sans: 'Tajawal', 'Cairo', sans-serif;
   --app-font-serif: 'Playfair Display', serif;
   --app-font-mono: 'DM Mono', monospace;
   --radius: 0.65rem;
@@ -93,12 +93,18 @@
 
 @layer base {
   * { @apply border-border; }
-  html { scroll-behavior: smooth; overflow-x: hidden; }
+  html { scroll-behavior: smooth; overflow-x: hidden; width: 100%; }
   body {
     @apply font-sans antialiased bg-background text-foreground;
     min-width: 320px;
     overflow-x: hidden;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    width: 100%;
   }
+  #root { min-width: 0; max-width: 100%; overflow-x: hidden; }
+  h1, h2, h3, h4, h5, h6, button, input { font-weight: 800; }
+  p, a, span, label { font-weight: 600; }
   button, a { -webkit-tap-highlight-color: transparent; }
 }
 
@@ -124,15 +130,30 @@
 .hero-storefront { background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / .28)); }
 .hero-stage { min-height: 340px; }
 .hero-product-image { animation: hero-product-in .55s cubic-bezier(.22,1,.36,1) both; }
+.hero-banner { background: hsl(221 32% 12%); color: white; }
+.hero-banner-wash { background: radial-gradient(circle at 76% 45%, hsl(39 58% 65% / .24), transparent 25rem), linear-gradient(115deg, hsl(220 37% 10%), hsl(221 31% 16%) 55%, hsl(38 31% 17%)); }
+.hero-banner-copy { position: relative; z-index: 2; }
+.hero-banner-art { isolation: isolate; min-height: 300px; display: grid; place-items: center; }
+.hero-banner-product { max-height: 410px; filter: saturate(1.08) contrast(1.04); animation: hero-product-in .55s cubic-bezier(.22,1,.36,1) both; }
+.hero-product-orbit { pointer-events: none; transform: rotate(-18deg); }
+.hero-product-orbit-small { transform: rotate(28deg); }
+.hero-product-label, .hero-product-name { white-space: nowrap; }
+.hero-dots { background: linear-gradient(180deg, transparent, hsl(220 37% 10% / .42)); }
 .hero-dot { background: hsl(var(--foreground) / .2); }
 .hero-dot.active { background: hsl(var(--secondary)); }
+.hero-banner .hero-dot { background: hsl(42 36% 96% / .35); }
+.hero-banner .hero-dot.active { background: hsl(var(--secondary)); }
+.category-section { border-bottom: 1px solid hsl(var(--border) / .7); }
+.category-tile { min-width: 0; }
+.category-tile.active .category-image { border-color: hsl(var(--secondary)); box-shadow: 0 0 0 5px hsl(var(--secondary) / .13); }
+.category-image { width: clamp(6.6rem, 17vw, 9.25rem); aspect-ratio: 1; }
 .shelf-divider { height: 1px; background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent); }
 .eyebrow {
   color: hsl(var(--secondary-foreground) / .7);
-  font-family: var(--app-font-mono);
+  font-family: var(--app-font-sans);
   font-size: .68rem;
-  letter-spacing: .16em;
-  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: .02em;
 }
 .gold-line { height: 1px; background: linear-gradient(90deg, transparent, hsl(var(--secondary)), transparent); }
 .hero-grid {
@@ -184,4 +205,11 @@
   .wa-float { left: 1rem; bottom: 1rem; padding-inline: 1rem; }
   .catalog-view-toggle { flex-shrink: 0; }
   .view-toggle-button { padding-inline: .6rem; }
+  .hero-banner-art { min-height: 230px; margin-inline: -1rem; }
+  .hero-banner-product { max-height: 290px; }
+  .hero-product-orbit { inset: 1rem; }
+  .hero-product-orbit-small { inset: 2.5rem; }
+  .hero-product-name { right: 1rem; top: 1rem; max-width: 65%; overflow: hidden; text-overflow: ellipsis; }
+  .hero-product-label { bottom: 1rem; left: 1rem; }
+  .category-image { width: 6.8rem; }
 }
