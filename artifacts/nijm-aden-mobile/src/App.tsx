@@ -40,6 +40,19 @@ const categoryOptions: { key: CategoryKey; label: string }[] = [
   { key: 'earbuds', label: 'السماعات' },
 ];
 
+const categoryTiles: { key: CategoryKey; label: string; image: string }[] = [
+  { key: 'iphone', label: 'آيفون', image: '/assets/iphone-blue-front.jpeg' },
+  { key: 'phones', label: 'الهواتف', image: '/assets/iphone-gold-front.jpeg' },
+  { key: 'earbuds', label: 'السماعات والصوتيات', image: '/assets/joyroom.jpeg' },
+  { key: 'accessories', label: 'الإكسسوارات', image: '/assets/camera-control.jpeg' },
+];
+
+const heroMessages = [
+  { kicker: 'وصل حديثاً', title: 'تجربة راقية', highlight: 'تبدأ من اختيارك.', description: 'أجهزة أصلية منتقاة بعناية، مع فحص واضح وتجربة تمنحك راحة البال قبل اتخاذ القرار.' },
+  { kicker: 'مختارات نجم عدن', title: 'تقنية تليق', highlight: 'بذوقك.', description: 'ألوان مميزة، حالات موثقة، وتفاصيل نوضحها لك قبل أن تختار.' },
+  { kicker: 'تواصل مباشر', title: 'اسأل عن جهازك', highlight: 'بكل ثقة.', description: 'أرسل لنا المنتج الذي أعجبك، وسنشاركك كل التفاصيل عبر واتساب.' },
+];
+
 function Home() {
   const [selected, setSelected] = useState<CatalogProduct | null>(null);
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -156,32 +169,42 @@ function Home() {
       </header>
 
       <main id="top">
-        <section className="hero-storefront relative isolate overflow-hidden">
-          <div className="hero-grid absolute inset-0 -z-10" />
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-16 pt-8 lg:grid-cols-[.9fr_1.1fr] lg:px-10 lg:pb-24 lg:pt-14">
-            <div className="rise order-2 lg:order-1">
-              <p className="eyebrow mb-5 flex items-center gap-3"><span className="h-px w-10 bg-[hsl(var(--secondary))]" /> {heroProduct.isNew ? 'وصل حديثاً' : 'مختارات نجم عدن'}</p>
-              <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.22] tracking-[-.05em] sm:text-6xl lg:text-[5rem]">{heroProduct.title}<br /><span className="text-[hsl(var(--secondary-foreground)/.62)]">{heroProduct.subtitle}</span></h1>
-              <p className="mt-6 max-w-lg text-[15px] leading-8 text-[hsl(var(--foreground)/.68)]">منتجات أصلية منتقاة بعناية، مع فحص واضح وتجربة تمنحك راحة البال قبل اتخاذ القرار.</p>
+        <section className="hero-banner relative isolate overflow-hidden">
+          <div className="hero-banner-wash absolute inset-0 -z-10" />
+          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 sm:py-14 lg:grid-cols-[1fr_.9fr] lg:px-10 lg:py-16">
+            <div className="hero-banner-copy rise order-2 lg:order-1">
+              <p className="eyebrow mb-5 flex items-center gap-3 text-[hsl(var(--secondary))]"><span className="h-px w-10 bg-[hsl(var(--secondary))]" /> {heroMessages[heroIndex]?.kicker}</p>
+              <h1 className="max-w-2xl text-4xl font-black leading-[1.14] tracking-[-.04em] text-white sm:text-6xl lg:text-[5.2rem]">{heroMessages[heroIndex]?.title}<br /><span className="text-[hsl(var(--secondary))]">{heroMessages[heroIndex]?.highlight}</span></h1>
+              <p className="mt-6 max-w-lg text-[15px] font-semibold leading-8 text-white/75">{heroMessages[heroIndex]?.description}</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <button onClick={() => { setActiveCategory('all'); setSearch(''); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="focus-ring inline-flex items-center gap-3 bg-[hsl(var(--primary))] px-6 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-all hover:-translate-y-1 hover:bg-[hsl(var(--foreground)/.88)]">تصفح المنتجات <ArrowLeft size={18} /></button>
-                <button onClick={() => openWhatsApp(heroProduct.title)} className="focus-ring inline-flex items-center gap-2 border border-[hsl(var(--border))] px-5 py-4 text-sm font-bold transition-colors hover:border-[hsl(var(--secondary))]"><MessageCircle size={17} /> اسأل الآن</button>
+                <button onClick={() => { setActiveCategory('all'); setSearch(''); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="focus-ring inline-flex items-center gap-3 bg-[hsl(var(--secondary))] px-6 py-4 text-sm font-black text-[hsl(var(--secondary-foreground))] transition-all hover:-translate-y-1 hover:bg-white">تصفح المنتجات <ArrowLeft size={18} /></button>
+                <button onClick={() => openWhatsApp(heroProduct.title)} className="focus-ring inline-flex items-center gap-2 border border-white/30 px-5 py-4 text-sm font-bold text-white transition-colors hover:border-[hsl(var(--secondary))]"><MessageCircle size={17} /> اسأل الآن</button>
               </div>
-              <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-[hsl(var(--foreground)/.12)] pt-5 text-xs text-[hsl(var(--foreground)/.6)]">
-                <span className="inline-flex items-center gap-2"><Check size={14} className="text-[hsl(var(--secondary-foreground))]" /> أصالة وحالة موثقة</span>
-                <span className="inline-flex items-center gap-2"><Check size={14} className="text-[hsl(var(--secondary-foreground))]" /> توصيل آمن</span>
-              </div>
-            </div>
-            <div className="rise rise-delay-2 order-1 lg:order-2">
-              <div className="hero-stage relative overflow-hidden border border-[hsl(var(--secondary)/.32)] bg-[hsl(var(--card))] p-4 shadow-[var(--shadow-md)] sm:p-7">
-                <div className="absolute right-7 top-7 z-10 flex items-center gap-2 bg-[hsl(var(--background)/.88)] px-3 py-2 text-[10px] font-bold backdrop-blur-md"><span className="h-2 w-2 rounded-full bg-[hsl(var(--secondary))]" /> {heroProduct.badge ?? 'متوفر الآن'}</div>
-                <img key={heroProduct.id} src={heroProduct.images[0]} alt={`${heroProduct.title} ${heroProduct.subtitle}`} className="hero-product-image aspect-[1.16] w-full object-cover mix-blend-multiply" />
-                <div className="absolute bottom-7 left-7 border border-[hsl(var(--secondary)/.65)] bg-[hsl(var(--background)/.9)] px-5 py-4 backdrop-blur-md"><span className="eyebrow">{String(heroIndex + 1).padStart(2, '0')} / {String(heroProducts.length).padStart(2, '0')}</span><p className="mt-1 font-bold">{heroProduct.title}</p></div>
-              </div>
-              <div className="mt-5 flex items-center justify-center gap-2">
-                {heroProducts.map((product, index) => <button key={product.id} onClick={() => setHeroIndex(index)} className={`hero-dot focus-ring h-2 rounded-full transition-all ${heroIndex === index ? 'active w-8' : 'w-2'}`} aria-label={`عرض ${product.title}`} />)}
+              <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-white/15 pt-5 text-xs font-semibold text-white/75">
+                <span className="inline-flex items-center gap-2"><Check size={14} className="text-[hsl(var(--secondary))]" /> أصالة وحالة موثقة</span>
+                <span className="inline-flex items-center gap-2"><Check size={14} className="text-[hsl(var(--secondary))]" /> تجربة 7 أيام</span>
               </div>
             </div>
+            <div className="hero-banner-art rise rise-delay-2 order-1">
+              <div className="hero-product-orbit absolute -inset-10 rounded-full border border-white/10" />
+              <div className="hero-product-orbit hero-product-orbit-small absolute -inset-3 rounded-full border border-[hsl(var(--secondary)/.45)]" />
+              <img key={heroProduct.id} src={heroProduct.images[0]} alt={`${heroProduct.title} ${heroProduct.subtitle}`} className="hero-banner-product relative z-10 w-full object-cover mix-blend-multiply" />
+              <div className="hero-product-label absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-white/95 px-4 py-3 text-xs font-black text-[hsl(var(--primary))] shadow-lg sm:bottom-8 sm:left-8"><span className="h-2 w-2 rounded-full bg-[hsl(var(--secondary))]" /> {heroProduct.badge ?? 'متوفر الآن'}</div>
+              <div className="hero-product-name absolute right-3 top-3 z-20 border border-white/20 bg-[hsl(var(--primary)/.65)] px-4 py-3 text-xs font-bold text-white backdrop-blur-md sm:right-8 sm:top-8">{heroProduct.title} — {heroProduct.color}</div>
+            </div>
+          </div>
+          <div className="hero-dots relative z-20 flex items-center justify-center gap-2 pb-7">
+            {heroProducts.map((product, index) => <button key={product.id} onClick={() => setHeroIndex(index)} className={`hero-dot focus-ring h-2.5 rounded-full transition-all ${heroIndex === index ? 'active w-9' : 'w-2.5'}`} aria-label={`عرض الشريحة ${index + 1}`} />)}
+          </div>
+        </section>
+
+        <section id="categories" className="category-section mx-auto max-w-7xl scroll-mt-36 px-5 py-10 lg:px-10 lg:py-14">
+          <div className="mb-7 flex items-end justify-between gap-4">
+            <div><p className="eyebrow mb-2">تصفح سريع</p><h2 className="text-2xl font-black tracking-tight sm:text-3xl">تسوق حسب التصنيف</h2></div>
+            <span className="hidden text-xs font-semibold text-[hsl(var(--foreground)/.55)] sm:inline">اختر ما يناسبك</span>
+          </div>
+          <div className="category-grid grid grid-cols-2 gap-5 sm:grid-cols-4 sm:gap-7">
+            {categoryTiles.map((category) => <button key={category.key} onClick={() => selectCategory(category.key)} className={`category-tile focus-ring group ${activeCategory === category.key ? 'active' : ''}`} aria-pressed={activeCategory === category.key}><span className="category-image mx-auto block overflow-hidden rounded-full border-4 border-[hsl(var(--muted))] bg-[hsl(var(--muted))] p-2 transition-all group-hover:border-[hsl(var(--secondary))] group-hover:shadow-[var(--shadow)]"><img src={category.image} alt="" className="h-full w-full rounded-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-110" /></span><span className="mt-4 block text-sm font-black text-[hsl(var(--foreground)/.78)] transition-colors group-hover:text-[hsl(var(--foreground))]">{category.label}</span></button>)}
           </div>
         </section>
 
