@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -266,6 +267,7 @@ function Home() {
 function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }: { activeCategory: CategoryKey; search: string; onSearchChange: (value: string) => void; onOpenWhatsApp: (productName?: string) => void }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const menuLayerRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -273,7 +275,8 @@ function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }:
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const closeOnOutsidePress = (event: PointerEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) setMobileMenu(false);
+      const target = event.target as Node;
+      if (!headerRef.current?.contains(target) && !menuLayerRef.current?.contains(target)) setMobileMenu(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setMobileMenu(false);
@@ -292,7 +295,33 @@ function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }:
     setLocation(categoryPaths[category]);
   };
 
+  const mobileNavigation = (
+    <div ref={menuLayerRef} id="mobile-navigation" aria-hidden={!mobileMenu} className={`mobile-menu-layer md:hidden ${mobileMenu ? 'open' : ''}`}>
+      <button type="button" className="mobile-menu-backdrop" onClick={() => setMobileMenu(false)} aria-label="إغلاق القائمة" tabIndex={mobileMenu ? 0 : -1} />
+      <aside className="mobile-menu-drawer" role="dialog" aria-modal="true" aria-label="قائمة متجر نجم عدن">
+        <div className="mobile-drawer-heading">
+          <div>
+            <p className="eyebrow">نجم عدن موبايل</p>
+            <h2>القائمة الرئيسية</h2>
+          </div>
+          <button type="button" onClick={() => setMobileMenu(false)} className="focus-ring mobile-drawer-close" aria-label="إغلاق القائمة" tabIndex={mobileMenu ? 0 : -1}><X size={20} /></button>
+        </div>
+        <form className="store-search mobile-drawer-search mb-5 flex items-center gap-3 border px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+          <Search size={17} className="shrink-0" />
+          <input autoFocus={mobileMenu} value={search} onChange={(event) => onSearchChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" tabIndex={mobileMenu ? 0 : -1} />
+        </form>
+        <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
+          {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`mobile-menu-link ${activeCategory === category.key ? 'active' : ''}`} aria-current={activeCategory === category.key ? 'page' : undefined} tabIndex={mobileMenu ? 0 : -1}>{category.label}</a>)}
+          <a href="/#promise" onClick={() => setMobileMenu(false)} className="mobile-menu-link" tabIndex={mobileMenu ? 0 : -1}>لماذا نجم عدن؟</a>
+          <a href="/#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link" tabIndex={mobileMenu ? 0 : -1}>تواصل معنا</a>
+          <button onClick={() => { setMobileMenu(false); onOpenWhatsApp(); }} className="mobile-menu-link accent" tabIndex={mobileMenu ? 0 : -1}>استفسار عبر واتساب</button>
+        </nav>
+      </aside>
+    </div>
+  );
+
   return (
+    <>
     <header ref={headerRef} className="relative z-[1000] border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
         <a href="/" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
@@ -317,29 +346,9 @@ function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }:
         {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`category-link focus-ring text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>{category.label}</a>)}
         <a href="/#promise" className="category-link focus-ring text-xs font-bold">لماذا نجم عدن؟</a>
       </nav>
-      <div id="mobile-navigation" aria-hidden={!mobileMenu} className={`mobile-menu-layer md:hidden ${mobileMenu ? 'open' : ''}`}>
-        <button type="button" className="mobile-menu-backdrop" onClick={() => setMobileMenu(false)} aria-label="إغلاق القائمة" tabIndex={mobileMenu ? 0 : -1} />
-        <aside className="mobile-menu-drawer" role="dialog" aria-modal="true" aria-label="قائمة متجر نجم عدن">
-          <div className="mobile-drawer-heading">
-            <div>
-              <p className="eyebrow">نجم عدن موبايل</p>
-              <h2>القائمة الرئيسية</h2>
-            </div>
-            <button type="button" onClick={() => setMobileMenu(false)} className="focus-ring mobile-drawer-close" aria-label="إغلاق القائمة" tabIndex={mobileMenu ? 0 : -1}><X size={20} /></button>
-          </div>
-          <form className="store-search mobile-drawer-search mb-5 flex items-center gap-3 border px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-            <Search size={17} className="shrink-0" />
-            <input autoFocus={mobileMenu} value={search} onChange={(event) => onSearchChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" tabIndex={mobileMenu ? 0 : -1} />
-          </form>
-          <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
-            {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`mobile-menu-link ${activeCategory === category.key ? 'active' : ''}`} aria-current={activeCategory === category.key ? 'page' : undefined} tabIndex={mobileMenu ? 0 : -1}>{category.label}</a>)}
-            <a href="/#promise" onClick={() => setMobileMenu(false)} className="mobile-menu-link" tabIndex={mobileMenu ? 0 : -1}>لماذا نجم عدن؟</a>
-            <a href="/#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link" tabIndex={mobileMenu ? 0 : -1}>تواصل معنا</a>
-            <button onClick={() => { setMobileMenu(false); onOpenWhatsApp(); }} className="mobile-menu-link accent" tabIndex={mobileMenu ? 0 : -1}>استفسار عبر واتساب</button>
-          </nav>
-        </aside>
-      </div>
     </header>
+    {createPortal(mobileNavigation, document.body)}
+    </>
   );
 }
 
