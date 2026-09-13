@@ -30,7 +30,7 @@ const assets = {
 export const catalog: CatalogProduct[] = [
   {
     id: 'iphone-16-blue',
-    title: 'iPhone 16',
+    title: 'آيفون 16',
     subtitle: 'اللون الأزرق البنفسجي',
     category: 'هواتف',
     specs: ['128GB', 'شريحة إلكترونية', 'حالة ممتازة'],
@@ -45,7 +45,7 @@ export const catalog: CatalogProduct[] = [
   },
   {
     id: 'iphone-16-black',
-    title: 'iPhone 16',
+    title: 'آيفون 16',
     subtitle: 'اللون الأسود',
     category: 'هواتف',
     specs: ['128GB', 'شريحة إلكترونية', 'حالة ممتازة'],
@@ -58,7 +58,7 @@ export const catalog: CatalogProduct[] = [
   },
   {
     id: 'iphone-pro-gold',
-    title: 'iPhone Pro',
+    title: 'آيفون 16 برو',
     subtitle: 'اللون الذهبي الصحراوي',
     category: 'هواتف',
     specs: ['256GB', 'كاميرا Pro', 'حالة ممتازة'],
@@ -73,7 +73,7 @@ export const catalog: CatalogProduct[] = [
   },
   {
     id: 'joyroom-earbuds',
-    title: 'Joyroom Wireless',
+    title: 'سماعات جوي روم اللاسلكية',
     subtitle: 'سماعات لاسلكية',
     category: 'إكسسوارات',
     specs: ['صوت نقي', 'شحن سريع', 'حالة جديدة'],
