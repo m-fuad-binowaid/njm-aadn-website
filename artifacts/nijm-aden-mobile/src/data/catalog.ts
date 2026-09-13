@@ -1,14 +1,3 @@
-import blueHero from '@assets/IMG_9213_1789304999025.jpeg';
-import blueFront from '@assets/IMG_9207_1789304999026.jpeg';
-import blueBack from '@assets/IMG_9206_1789304999026.jpeg';
-import blueAngle from '@assets/IMG_9208_1789304999025.jpeg';
-import blueDetail from '@assets/IMG_9205_1789304999026.jpeg';
-import blackHero from '@assets/IMG_9212_1789304999025.jpeg';
-import goldBack from '@assets/IMG_9211_1789304999025.jpeg';
-import goldFront from '@assets/IMG_9210_1789304999025.jpeg';
-import goldHero from '@assets/IMG_9209_1789304999025.jpeg';
-import earbuds from '@assets/IMG_9204_1789304999026.jpeg';
-
 export type CatalogProduct = {
   id: string;
   title: string;
@@ -20,6 +9,19 @@ export type CatalogProduct = {
   accent: string;
 };
 
+const assets = {
+  blueHero: '/assets/iphone-blue-hero.jpeg',
+  blueFront: '/assets/iphone-blue-front.jpeg',
+  blueBack: '/assets/iphone-blue-back.jpeg',
+  blueAngle: '/assets/camera-control.jpeg',
+  blueDetail: '/assets/iphone-blue-combo.jpeg',
+  blackHero: '/assets/iphone-black-combo.jpeg',
+  goldBack: '/assets/iphone-gold-back.jpeg',
+  goldFront: '/assets/iphone-gold-front.jpeg',
+  goldHero: '/assets/iphone-gold-combo.jpeg',
+  earbuds: '/assets/joyroom.jpeg',
+} as const;
+
 export const catalog: CatalogProduct[] = [
   {
     id: 'iphone-16-blue',
@@ -28,7 +30,7 @@ export const catalog: CatalogProduct[] = [
     specs: ['128GB', 'شريحة إلكترونية', 'حالة ممتازة'],
     color: 'أزرق بنفسجي',
     badge: 'الأكثر طلباً',
-    images: [blueHero, blueFront, blueBack, blueAngle, blueDetail],
+    images: [assets.blueHero, assets.blueFront, assets.blueBack, assets.blueAngle, assets.blueDetail],
     accent: 'hsl(240 52% 67%)',
   },
   {
@@ -37,7 +39,7 @@ export const catalog: CatalogProduct[] = [
     subtitle: 'اللون الأسود',
     specs: ['128GB', 'شريحة إلكترونية', 'حالة ممتازة'],
     color: 'أسود',
-    images: [blackHero],
+    images: [assets.blackHero],
     accent: 'hsl(220 9% 28%)',
   },
   {
@@ -47,7 +49,7 @@ export const catalog: CatalogProduct[] = [
     specs: ['256GB', 'كاميرا Pro', 'حالة ممتازة'],
     color: 'ذهبي صحراوي',
     badge: 'اختيار فاخر',
-    images: [goldHero, goldFront, goldBack],
+    images: [assets.goldHero, assets.goldFront, assets.goldBack],
     accent: 'hsl(33 39% 70%)',
   },
   {
@@ -56,7 +58,7 @@ export const catalog: CatalogProduct[] = [
     subtitle: 'سماعات لاسلكية',
     specs: ['صوت نقي', 'شحن سريع', 'حالة جديدة'],
     color: 'أبيض',
-    images: [earbuds],
+    images: [assets.earbuds],
     accent: 'hsl(40 22% 81%)',
   },
 ];
