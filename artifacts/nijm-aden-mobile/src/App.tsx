@@ -9,6 +9,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ClipboardCheck,
   Eye,
   Grid2X2,
@@ -30,7 +31,7 @@ import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
 
-type CategoryKey = 'all' | 'phones' | 'iphone' | 'accessories' | 'earbuds';
+type CategoryKey = 'all' | 'phones' | 'iphone' | 'accessories' | 'earbuds' | 'offers';
 
 const categoryOptions: { key: CategoryKey; label: string }[] = [
   { key: 'all', label: 'كل المنتجات' },
@@ -38,6 +39,7 @@ const categoryOptions: { key: CategoryKey; label: string }[] = [
   { key: 'iphone', label: 'آيفون' },
   { key: 'accessories', label: 'الإكسسوارات' },
   { key: 'earbuds', label: 'السماعات' },
+  { key: 'offers', label: 'العروض' },
 ];
 
 const categoryTiles: { key: CategoryKey; label: string; image: string }[] = [
@@ -47,47 +49,75 @@ const categoryTiles: { key: CategoryKey; label: string; image: string }[] = [
   { key: 'accessories', label: 'الإكسسوارات', image: '/assets/camera-control.jpeg' },
 ];
 
+const categoryPaths: Record<CategoryKey, string> = {
+  all: '/category/products',
+  phones: '/category/phones',
+  iphone: '/category/iphones',
+  accessories: '/category/accessories',
+  earbuds: '/category/earbuds',
+  offers: '/category/offers',
+};
+
+const categorySlugs: Record<string, CategoryKey> = {
+  products: 'all',
+  all: 'all',
+  phones: 'phones',
+  iphones: 'iphone',
+  iphone: 'iphone',
+  accessories: 'accessories',
+  earbuds: 'earbuds',
+  offers: 'offers',
+};
+
+const categoryMeta: Record<CategoryKey, { label: string; description: string }> = {
+  all: { label: 'كل المنتجات', description: 'اكتشف كامل مختارات نجم عدن من الهواتف والإكسسوارات.' },
+  phones: { label: 'الهواتف', description: 'هواتف منتقاة بعناية مع تفاصيل واضحة وحالة موثقة.' },
+  iphone: { label: 'آيفون', description: 'مختارات آيفون بألوان وسعات مختلفة لتجد ما يناسبك.' },
+  accessories: { label: 'الإكسسوارات', description: 'إكسسوارات عملية تكمل تجربتك اليومية.' },
+  earbuds: { label: 'السماعات والصوتيات', description: 'صوت واضح وتجربة لاسلكية للاستخدام اليومي.' },
+  offers: { label: 'العروض', description: 'منتجات مختارة بعلامات مميزة وتواصل مباشر لمعرفة التفاصيل.' },
+};
+
 const heroMessages = [
   { kicker: 'وصل حديثاً', title: 'تجربة راقية', highlight: 'تبدأ من اختيارك.', description: 'أجهزة أصلية منتقاة بعناية، مع فحص واضح وتجربة تمنحك راحة البال قبل اتخاذ القرار.' },
   { kicker: 'مختارات نجم عدن', title: 'تقنية تليق', highlight: 'بذوقك.', description: 'ألوان مميزة، حالات موثقة، وتفاصيل نوضحها لك قبل أن تختار.' },
   { kicker: 'تواصل مباشر', title: 'اسأل عن جهازك', highlight: 'بكل ثقة.', description: 'أرسل لنا المنتج الذي أعجبك، وسنشاركك كل التفاصيل عبر واتساب.' },
 ];
 
+function openWhatsApp(productName = 'كتالوج نجم عدن موبايل') {
+  const message = `السلام عليكم، أريد الاستفسار عن ${productName}`;
+  window.open(`https://wa.me/96777887578?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+}
+
+function filterCatalog(category: CategoryKey, search = '') {
+  const normalizedSearch = search.trim().toLowerCase();
+  return catalog.filter((product) => {
+    const matchesCategory =
+      category === 'all' ||
+      (category === 'phones' && product.category === 'هواتف') ||
+      (category === 'iphone' && product.category === 'هواتف' && product.title.toLowerCase().includes('iphone')) ||
+      (category === 'accessories' && product.category === 'إكسسوارات') ||
+      (category === 'earbuds' && product.tags.includes('سماعات')) ||
+      (category === 'offers' && Boolean(product.badge));
+    const searchable = [product.title, product.subtitle, product.category, product.color, ...product.specs, ...product.tags].join(' ').toLowerCase();
+    return matchesCategory && (!normalizedSearch || searchable.includes(normalizedSearch));
+  });
+}
+
 function Home() {
   const [selected, setSelected] = useState<CatalogProduct | null>(null);
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const headerRef = useRef<HTMLElement>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [catalogView, setCatalogView] = useState<'large' | 'compact'>('large');
   const [heroIndex, setHeroIndex] = useState(0);
+  const [, setLocation] = useLocation();
   const heroProducts = useMemo(() => catalog.slice(0, 3), []);
   const heroProduct = heroProducts[heroIndex] ?? heroProducts[0];
   const normalizedSearch = search.trim().toLowerCase();
   const hasFilter = activeCategory !== 'all' || normalizedSearch.length > 0;
 
-  const openWhatsApp = (productName = 'كتالوج نجم عدن موبايل') => {
-    const message = `السلام عليكم، أريد الاستفسار عن ${productName}`;
-    window.open(`https://wa.me/96777887578?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-  };
-
-  const selectCategory = (category: CategoryKey) => {
-    setActiveCategory(category);
-    setMobileMenu(false);
-    window.requestAnimationFrame(() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  };
-
   const filteredProducts = useMemo(() => {
-    return catalog.filter((product) => {
-      const matchesCategory =
-        activeCategory === 'all' ||
-        (activeCategory === 'phones' && product.category === 'هواتف') ||
-        (activeCategory === 'iphone' && product.category === 'هواتف' && product.title.toLowerCase().includes('iphone')) ||
-        (activeCategory === 'accessories' && product.category === 'إكسسوارات') ||
-        (activeCategory === 'earbuds' && product.tags.includes('سماعات'));
-      const searchable = [product.title, product.subtitle, product.category, product.color, ...product.specs, ...product.tags].join(' ').toLowerCase();
-      return matchesCategory && (!normalizedSearch || searchable.includes(normalizedSearch));
-    });
+    return filterCatalog(activeCategory, search);
   }, [activeCategory, normalizedSearch]);
 
   useEffect(() => {
@@ -101,26 +131,6 @@ function Home() {
     return () => window.clearInterval(timer);
   }, [heroProducts.length]);
 
-  useEffect(() => {
-    if (!mobileMenu) return;
-
-    const closeOnOutsidePress = (event: PointerEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
-        setMobileMenu(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileMenu(false);
-    };
-
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePress);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [mobileMenu]);
-
   if (!heroProduct) return null;
 
   const featuredProducts = filteredProducts.filter((product) => product.featured);
@@ -133,64 +143,7 @@ function Home() {
         <span>فحص شامل قبل البيع</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تجربة 7 أيام</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تواصل مباشر عبر واتساب</span>
       </div>
 
-      <header ref={headerRef} className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
-          <a href="#top" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
-            <span className="logo-frame grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.8)] bg-white">
-              <img src="/assets/nijm-aden-logo.jpeg" alt="شعار نجم عدن موبايل" className="logo-image h-full w-full object-cover" />
-            </span>
-            <span>
-              <strong className="block text-[15px] font-extrabold tracking-tight">نجم عدن موبايل</strong>
-              <span className="eyebrow">مختارات تستحقها</span>
-            </span>
-          </a>
-
-          <form className="store-search hidden min-w-0 flex-1 items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3 md:flex" onSubmit={(event) => { event.preventDefault(); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-            <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
-            <input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن جهاز أو إكسسوار..." aria-label="البحث في المنتجات" />
-            {search && <button type="button" onClick={() => setSearch('')} className="focus-ring text-[hsl(var(--foreground)/.5)]" aria-label="مسح البحث"><X size={15} /></button>}
-          </form>
-
-          <div className="mr-auto flex items-center gap-2">
-            <button onClick={() => openWhatsApp()} className="focus-ring hidden items-center gap-2 border border-[hsl(var(--primary))] px-4 py-3 text-xs font-bold text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] sm:inline-flex">
-              <MessageCircle size={15} /> تواصل الآن
-            </button>
-            <button onClick={() => setMobileMenu((open) => !open)} className="focus-ring grid h-11 w-11 place-items-center border border-[hsl(var(--border))] md:hidden" aria-expanded={mobileMenu} aria-controls="mobile-navigation" aria-label={mobileMenu ? 'إغلاق القائمة' : 'فتح القائمة'}>
-              {mobileMenu ? <X size={19} /> : <Menu size={19} />}
-            </button>
-            <a href="#products" className="focus-ring hidden h-11 w-11 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--foreground)/.72)] sm:grid" aria-label="المنتجات">
-              <ShoppingBag size={18} />
-            </a>
-          </div>
-        </div>
-
-        <div className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-7 gap-y-4 px-5 pb-4 lg:px-10 md:flex">
-          <span className="hidden shrink-0 items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.5)] md:inline-flex"><SlidersHorizontal size={14} /> تصفح حسب</span>
-          {categoryOptions.map((category) => (
-            <button key={category.key} onClick={() => selectCategory(category.key)} className={`category-link focus-ring text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>
-              {category.label}
-            </button>
-          ))}
-          <a href="#promise" className="category-link focus-ring text-xs font-bold">لماذا نجم عدن؟</a>
-        </div>
-
-        <div id="mobile-navigation" aria-hidden={!mobileMenu} className={`mobile-menu-panel absolute inset-x-0 top-full border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 md:hidden ${mobileMenu ? 'open' : ''}`}>
-            <form className="store-search mb-4 flex items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-              <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
-              <input autoFocus={mobileMenu} value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" />
-            </form>
-            <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
-              {categoryOptions.map((category) => (
-                <button key={category.key} onClick={() => selectCategory(category.key)} className={`mobile-menu-link ${activeCategory === category.key ? 'active' : ''}`} aria-current={activeCategory === category.key ? 'page' : undefined}>
-                  {category.label}
-                </button>
-              ))}
-              <a href="#promise" onClick={() => setMobileMenu(false)} className="mobile-menu-link">لماذا نجم عدن؟</a>
-              <a href="#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link">تواصل معنا</a>
-              <button onClick={() => { setMobileMenu(false); openWhatsApp(); }} className="mobile-menu-link accent">استفسار عبر واتساب</button>
-            </nav>
-        </div>
-      </header>
+      <StoreHeader activeCategory={activeCategory} search={search} onSearchChange={setSearch} onOpenWhatsApp={openWhatsApp} />
 
       <main id="top">
         <section className="hero-banner relative isolate overflow-hidden">
@@ -228,7 +181,7 @@ function Home() {
             <span className="hidden text-xs font-semibold text-[hsl(var(--foreground)/.55)] sm:inline">اختر ما يناسبك</span>
           </div>
           <div className="category-grid grid grid-cols-2 gap-5 sm:grid-cols-4 sm:gap-7">
-            {categoryTiles.map((category) => <button key={category.key} onClick={() => selectCategory(category.key)} className={`category-tile focus-ring group ${activeCategory === category.key ? 'active' : ''}`} aria-pressed={activeCategory === category.key}><span className="category-image mx-auto block overflow-hidden rounded-full border-4 border-[hsl(var(--muted))] bg-[hsl(var(--muted))] p-2 transition-all group-hover:border-[hsl(var(--secondary))] group-hover:shadow-[var(--shadow)]"><img src={category.image} alt="" className="h-full w-full rounded-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-110" /></span><span className="mt-4 block text-sm font-black text-[hsl(var(--foreground)/.78)] transition-colors group-hover:text-[hsl(var(--foreground))]">{category.label}</span></button>)}
+            {categoryTiles.map((category) => <button key={category.key} onClick={() => setLocation(categoryPaths[category.key])} className={`category-tile focus-ring group ${activeCategory === category.key ? 'active' : ''}`} aria-pressed={activeCategory === category.key}><span className="category-image mx-auto block overflow-hidden rounded-full border-4 border-[hsl(var(--muted))] bg-[hsl(var(--muted))] p-2 transition-all group-hover:border-[hsl(var(--secondary))] group-hover:shadow-[var(--shadow)]"><img src={category.image} alt="" className="h-full w-full rounded-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-110" /></span><span className="mt-4 block text-sm font-black text-[hsl(var(--foreground)/.78)] transition-colors group-hover:text-[hsl(var(--foreground))]">{category.label}</span></button>)}
           </div>
         </section>
 
@@ -305,6 +258,130 @@ function Home() {
          </div>
       </footer>
       <button onClick={() => openWhatsApp()} className="wa-float focus-ring fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#1d6844] px-5 py-3 text-sm font-bold text-white"><MessageCircle size={18} /> واتساب</button>
+       {selected && <ProductModal product={selected} onClose={() => setSelected(null)} onWhatsApp={() => openWhatsApp(selected.title)} />}
+    </div>
+  );
+}
+
+function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }: { activeCategory: CategoryKey; search: string; onSearchChange: (value: string) => void; onOpenWhatsApp: (productName?: string) => void }) {
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!mobileMenu) return;
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) setMobileMenu(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenu(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [mobileMenu]);
+
+  const goToCategory = (category: CategoryKey) => {
+    setMobileMenu(false);
+    setLocation(categoryPaths[category]);
+  };
+
+  return (
+    <header ref={headerRef} className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
+        <a href="/" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
+          <span className="logo-frame grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.8)] bg-white">
+            <img src="/assets/nijm-aden-logo.jpeg" alt="شعار نجم عدن موبايل" className="logo-image h-full w-full object-cover" />
+          </span>
+          <span><strong className="block text-[15px] font-extrabold tracking-tight">نجم عدن موبايل</strong><span className="eyebrow">مختارات تستحقها</span></span>
+        </a>
+        <form className="store-search hidden min-w-0 flex-1 items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3 md:flex" onSubmit={(event) => { event.preventDefault(); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+          <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
+          <input value={search} onChange={(event) => onSearchChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن جهاز أو إكسسوار..." aria-label="البحث في المنتجات" />
+          {search && <button type="button" onClick={() => onSearchChange('')} className="focus-ring text-[hsl(var(--foreground)/.5)]" aria-label="مسح البحث"><X size={15} /></button>}
+        </form>
+        <div className="mr-auto flex items-center gap-2">
+          <button onClick={() => onOpenWhatsApp()} className="focus-ring hidden items-center gap-2 border border-[hsl(var(--primary))] px-4 py-3 text-xs font-bold text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] sm:inline-flex"><MessageCircle size={15} /> تواصل الآن</button>
+          <button onClick={() => setMobileMenu((open) => !open)} className="focus-ring grid h-11 w-11 place-items-center border border-[hsl(var(--border))] md:hidden" aria-expanded={mobileMenu} aria-controls="mobile-navigation" aria-label={mobileMenu ? 'إغلاق القائمة' : 'فتح القائمة'}>{mobileMenu ? <X size={19} /> : <Menu size={19} />}</button>
+          <a href="/#products" className="focus-ring hidden h-11 w-11 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--foreground)/.72)] sm:grid" aria-label="المنتجات"><ShoppingBag size={18} /></a>
+        </div>
+      </div>
+      <nav className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-7 gap-y-4 px-5 pb-4 lg:px-10 md:flex" aria-label="تصنيفات المتجر">
+        <span className="hidden shrink-0 items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.5)] md:inline-flex"><SlidersHorizontal size={14} /> تصفح حسب</span>
+        {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`category-link focus-ring text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>{category.label}</a>)}
+        <a href="/#promise" className="category-link focus-ring text-xs font-bold">لماذا نجم عدن؟</a>
+      </nav>
+      <div id="mobile-navigation" aria-hidden={!mobileMenu} className={`mobile-menu-panel absolute inset-x-0 top-full border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 md:hidden ${mobileMenu ? 'open' : ''}`}>
+        <form className="store-search mb-4 flex items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+          <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
+          <input autoFocus={mobileMenu} value={search} onChange={(event) => onSearchChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" />
+        </form>
+        <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
+          {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`mobile-menu-link ${activeCategory === category.key ? 'active' : ''}`} aria-current={activeCategory === category.key ? 'page' : undefined}>{category.label}</a>)}
+          <a href="/#promise" onClick={() => setMobileMenu(false)} className="mobile-menu-link">لماذا نجم عدن؟</a>
+          <a href="/#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link">تواصل معنا</a>
+          <button onClick={() => { setMobileMenu(false); onOpenWhatsApp(); }} className="mobile-menu-link accent">استفسار عبر واتساب</button>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+function CategoryPage({ slug }: { slug: string }) {
+  const categoryKey = categorySlugs[slug];
+  const resolvedCategory = categoryKey ?? 'all';
+  const meta = categoryMeta[resolvedCategory];
+  const [selected, setSelected] = useState<CatalogProduct | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [availabilityOnly, setAvailabilityOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+
+  useEffect(() => {
+    if (meta) {
+      document.title = `${meta.label} — نجم عدن موبايل`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [meta]);
+
+  const products = useMemo(() => {
+    const visible = filterCatalog(resolvedCategory, search).filter((product) => !availabilityOnly || product.availability.includes('متوفر'));
+    return [...visible].sort((a, b) => sortBy === 'newest' ? Number(Boolean(b.isNew)) - Number(Boolean(a.isNew)) : Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+  }, [availabilityOnly, resolvedCategory, search, sortBy]);
+
+  if (!meta) return <NotFound />;
+
+  return (
+    <div className="site-shell grain min-h-[100dvh]" dir="rtl">
+      <div className="store-topline bg-[hsl(var(--primary))] px-5 py-2 text-center text-[11px] font-semibold text-[hsl(var(--primary-foreground))]"><span>فحص شامل قبل البيع</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تجربة 7 أيام</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تواصل مباشر عبر واتساب</span></div>
+      <StoreHeader activeCategory={resolvedCategory} search={search} onSearchChange={setSearch} onOpenWhatsApp={openWhatsApp} />
+      <main id="products" className="category-page mx-auto max-w-7xl px-5 pb-16 pt-7 lg:px-10 lg:pb-24">
+        <nav className="breadcrumb mb-9 flex items-center gap-2 text-xs font-bold" aria-label="مسار التنقل"><a href="/" className="transition-colors hover:text-[hsl(var(--secondary-foreground))]">الرئيسية</a><ChevronLeft size={14} className="text-[hsl(var(--foreground)/.35)]" /><span className="text-[hsl(var(--foreground)/.55)]">{meta.label}</span></nav>
+        <div className="mb-8 flex flex-col gap-5 border-b border-[hsl(var(--border))] pb-8 sm:flex-row sm:items-end sm:justify-between">
+          <div><p className="eyebrow mb-3">كتالوج نجم عدن</p><h1 className="text-3xl font-black tracking-tight sm:text-5xl">{meta.label}</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[hsl(var(--foreground)/.62)]">{meta.description}</p></div>
+          <a href="/" className="focus-ring inline-flex shrink-0 items-center gap-2 border border-[hsl(var(--border))] px-4 py-3 text-xs font-bold transition-colors hover:border-[hsl(var(--secondary))]">العودة للرئيسية <ArrowLeft size={15} /></a>
+        </div>
+        <div className="category-actions relative z-10 mb-7 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <button onClick={() => { setFilterOpen((open) => !open); setSortOpen(false); }} className={`category-action-button focus-ring ${filterOpen || availabilityOnly ? 'active' : ''}`} aria-expanded={filterOpen}><SlidersHorizontal size={15} /> تصفية</button>
+              {filterOpen && <div className="category-popover right-0 mt-2 min-w-52"><p className="mb-3 text-xs font-black">عرض المنتجات</p><button onClick={() => setAvailabilityOnly(false)} className={`category-option ${!availabilityOnly ? 'active' : ''}`}>كل المنتجات <Check size={14} /></button><button onClick={() => setAvailabilityOnly(true)} className={`category-option ${availabilityOnly ? 'active' : ''}`}>متوفر الآن <Check size={14} /></button></div>}
+            </div>
+            <div className="relative">
+              <button onClick={() => { setSortOpen((open) => !open); setFilterOpen(false); }} className={`category-action-button focus-ring ${sortOpen ? 'active' : ''}`} aria-expanded={sortOpen}>ترتيب حسب: {sortBy === 'newest' ? 'الأحدث' : 'الأكثر طلباً'} <ChevronDown size={15} /></button>
+              {sortOpen && <div className="category-popover right-0 mt-2 min-w-52"><button onClick={() => { setSortBy('newest'); setSortOpen(false); }} className={`category-option ${sortBy === 'newest' ? 'active' : ''}`}>الأحدث <Check size={14} /></button><button onClick={() => { setSortBy('popular'); setSortOpen(false); }} className={`category-option ${sortBy === 'popular' ? 'active' : ''}`}>الأكثر طلباً <Check size={14} /></button></div>}
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.55)]"><Tag size={14} className="text-[hsl(var(--secondary-foreground))]" /> {products.length} منتجات</span>
+        </div>
+        <ProductShelf view="compact" products={products} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+      </main>
+      <footer className="border-t border-[hsl(var(--foreground)/.1)]"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-7 text-xs text-[hsl(var(--foreground)/.58)] lg:px-10"><a href="/" className="font-black text-[hsl(var(--foreground))]">نجم عدن موبايل</a><span>77887578 / 77883537</span></div></footer>
+      <button onClick={() => openWhatsApp()} className="wa-float focus-ring fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#1d6844] px-5 py-3 text-sm font-bold text-white"><MessageCircle size={18} /> واتساب</button>
       {selected && <ProductModal product={selected} onClose={() => setSelected(null)} onWhatsApp={() => openWhatsApp(selected.title)} />}
     </div>
   );
@@ -324,7 +401,7 @@ function ProductCard({ product, index, view, onOpen, onWhatsApp }: { product: Ca
       <div className={`relative overflow-hidden bg-[hsl(var(--muted))] ${compact ? 'p-2.5 sm:p-4' : 'p-4 sm:p-6'}`}><img src={product.images[0]} alt={`${product.title} ${product.subtitle}`} className={`product-image w-full object-cover mix-blend-multiply ${compact ? 'aspect-square' : 'aspect-[1.2]'}`} />{product.badge && <span className={`absolute right-4 top-4 bg-[hsl(var(--primary))] px-3 py-1 text-[10px] font-bold text-[hsl(var(--primary-foreground))] ${compact ? 'max-w-[calc(100%-2rem)] truncate' : ''}`}>{product.badge}</span>}<span className={`absolute grid place-items-center rounded-full bg-[hsl(var(--background)/.86)] text-[hsl(var(--foreground))] ${compact ? 'bottom-3 left-3 h-8 w-8' : 'bottom-5 left-5 h-10 w-10'}`}><Eye size={compact ? 14 : 17} /></span></div>
       <div className={compact ? 'px-3 pt-3 sm:px-5 sm:pt-5' : 'px-5 pt-5'}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className={`truncate font-extrabold ${compact ? 'text-sm sm:text-lg' : 'text-xl'}`}>{product.title}</h3><p className="mt-1 truncate text-xs text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p></div><span className="mt-1 h-3 w-3 shrink-0 rounded-full border border-[hsl(var(--foreground)/.2)]" style={{ background: product.accent }} /></div></div>
     </button>
-    <div className={`flex flex-1 flex-col ${compact ? 'px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4' : 'px-5 pb-6 pt-4'}`}><div className={`flex flex-wrap gap-2 ${compact ? 'mb-3 max-h-8 overflow-hidden' : 'mb-4'}`}>{product.specs.map((spec) => <span key={spec} className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--foreground)/.61)]">{spec}</span>)}</div><div className={`flex items-center justify-between gap-2 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)] ${compact ? 'mb-3' : 'mb-5'}`}><span className="inline-flex min-w-0 items-center gap-1 truncate"><Check size={12} className="shrink-0 text-[hsl(var(--secondary-foreground))]" /> {product.availability}</span><span className="shrink-0">{product.category}</span></div>{!compact && <div className="mb-5 flex flex-wrap gap-3 border-y border-[hsl(var(--border))] py-3 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><ShieldCheck size={13} className="text-[hsl(var(--secondary-foreground))]" /> فحص شامل</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div>}<div className="mt-auto grid grid-cols-[1fr_auto] gap-2"><button onClick={onWhatsApp} className={`focus-ring inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 ${compact ? 'px-2 py-2.5 text-[10px] sm:px-3 sm:text-xs' : 'px-3 py-3 text-xs'}`}><MessageCircle size={compact ? 14 : 15} /> <span className={compact ? 'hidden sm:inline' : ''}>اسأل عبر واتساب</span></button><button onClick={onOpen} className={`focus-ring grid place-items-center border border-[hsl(var(--border))] ${compact ? 'w-9' : 'px-3'}`} aria-label={`تفاصيل ${product.title}`}><ArrowLeft size={16} /></button></div></div>
+    <div className={`flex flex-1 flex-col ${compact ? 'px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4' : 'px-5 pb-6 pt-4'}`}><div className={`flex flex-wrap gap-2 ${compact ? 'mb-3 max-h-8 overflow-hidden' : 'mb-4'}`}>{product.specs.map((spec) => <span key={spec} className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--foreground)/.61)]">{spec}</span>)}</div><div className={`flex items-center justify-between gap-2 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)] ${compact ? 'mb-3' : 'mb-5'}`}><span className="inline-flex min-w-0 items-center gap-1 truncate"><Check size={12} className="shrink-0 text-[hsl(var(--secondary-foreground))]" /> {product.availability}</span><span className="shrink-0">{product.category}</span></div><div className="mb-4 flex items-center gap-1 text-[10px] font-bold text-[hsl(var(--secondary-foreground))]"><Tag size={12} /> السعر عند الاستفسار</div>{!compact && <div className="mb-5 flex flex-wrap gap-3 border-y border-[hsl(var(--border))] py-3 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><ShieldCheck size={13} className="text-[hsl(var(--secondary-foreground))]" /> فحص شامل</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div>}<div className="mt-auto grid grid-cols-[1fr_auto] gap-2"><button onClick={onWhatsApp} className={`focus-ring inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 ${compact ? 'px-2 py-2.5 text-[10px] sm:px-3 sm:text-xs' : 'px-3 py-3 text-xs'}`}><MessageCircle size={compact ? 14 : 15} /> <span className={compact ? 'hidden sm:inline' : ''}>اسأل عبر واتساب</span></button><button onClick={onOpen} className={`focus-ring grid place-items-center border border-[hsl(var(--border))] ${compact ? 'w-9' : 'px-3'}`} aria-label={`تفاصيل ${product.title}`}><ArrowLeft size={16} /></button></div></div>
   </article>;
 }
 
@@ -363,7 +440,7 @@ function ProductModal({ product, onClose, onWhatsApp }: { product: CatalogProduc
 }
 
 function Router() {
-  return <RoutedErrorBoundary><Switch><Route path="/" component={Home} /><Route component={NotFound} /></Switch></RoutedErrorBoundary>;
+  return <RoutedErrorBoundary><Switch><Route path="/" component={Home} /><Route path="/category/:slug">{({ slug }) => <CategoryPage slug={slug} />}</Route><Route component={NotFound} /></Switch></RoutedErrorBoundary>;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
