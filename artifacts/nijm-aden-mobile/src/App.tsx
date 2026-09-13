@@ -11,6 +11,8 @@ import {
   ChevronRight,
   ClipboardCheck,
   Eye,
+  Grid2X2,
+  LayoutList,
   Menu,
   MessageCircle,
   Phone,
@@ -43,6 +45,7 @@ function Home() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
+  const [catalogView, setCatalogView] = useState<'large' | 'compact'>('large');
   const [heroIndex, setHeroIndex] = useState(0);
   const heroProducts = useMemo(() => catalog.slice(0, 3), []);
   const heroProduct = heroProducts[heroIndex] ?? heroProducts[0];
@@ -98,9 +101,9 @@ function Home() {
 
       <header className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
-          <a href="#top" className="focus-ring flex shrink-0 items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center border border-[hsl(var(--secondary)/.8)] text-[hsl(var(--secondary-foreground))]">
-              <span className="font-serif text-xl">ن</span>
+          <a href="#top" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
+            <span className="logo-frame grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.8)] bg-white">
+              <img src="/assets/nijm-aden-logo.jpeg" alt="شعار نجم عدن موبايل" className="logo-image h-full w-full object-cover" />
             </span>
             <span>
               <strong className="block text-[15px] font-extrabold tracking-tight">نجم عدن موبايل</strong>
@@ -127,14 +130,14 @@ function Home() {
           </div>
         </div>
 
-        <div className="mx-auto flex max-w-7xl items-center gap-7 overflow-x-auto px-5 pb-4 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-7 gap-y-4 px-5 pb-4 lg:px-10">
           <span className="hidden shrink-0 items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.5)] md:inline-flex"><SlidersHorizontal size={14} /> تصفح حسب</span>
           {categoryOptions.map((category) => (
-            <button key={category.key} onClick={() => selectCategory(category.key)} className={`category-link focus-ring shrink-0 text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>
+            <button key={category.key} onClick={() => selectCategory(category.key)} className={`category-link focus-ring text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>
               {category.label}
             </button>
           ))}
-          <a href="#promise" className="category-link focus-ring shrink-0 text-xs font-bold">لماذا نجم عدن؟</a>
+          <a href="#promise" className="category-link focus-ring text-xs font-bold">لماذا نجم عدن؟</a>
         </div>
 
         {mobileMenu && (
@@ -183,21 +186,43 @@ function Home() {
         </section>
 
         <section id="products" className="mx-auto max-w-7xl scroll-mt-36 px-5 pb-16 pt-10 lg:px-10 lg:pb-24">
-          <div className="store-section-heading mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div className="store-section-heading mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="eyebrow mb-3">{hasFilter ? 'نتائج التصفح' : '01 — اكتشف المختارات'}</p>
               <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{hasFilter ? 'المنتجات المطابقة' : 'منتجات تستحق الاختيار'}</h2>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[hsl(var(--foreground)/.55)]"><Tag size={14} className="text-[hsl(var(--secondary-foreground))]" /> {filteredProducts.length} منتجات متاحة</div>
+             <div className="flex flex-wrap items-center gap-4">
+               <div className="catalog-view-toggle flex items-center gap-1 border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-1" role="group" aria-label="طريقة عرض المنتجات">
+                 <button
+                   type="button"
+                   onClick={() => setCatalogView('large')}
+                   className={`focus-ring view-toggle-button inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition-colors ${catalogView === 'large' ? 'active' : ''}`}
+                   aria-pressed={catalogView === 'large'}
+                   title="العرض الكبير"
+                 >
+                   <LayoutList size={15} /> <span>كبير</span>
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => setCatalogView('compact')}
+                   className={`focus-ring view-toggle-button inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition-colors ${catalogView === 'compact' ? 'active' : ''}`}
+                   aria-pressed={catalogView === 'compact'}
+                   title="العرض الشبكي"
+                 >
+                   <Grid2X2 size={15} /> <span>شبكة</span>
+                 </button>
+               </div>
+               <div className="flex items-center gap-2 text-xs text-[hsl(var(--foreground)/.55)]"><Tag size={14} className="text-[hsl(var(--secondary-foreground))]" /> {filteredProducts.length} منتجات متاحة</div>
+             </div>
           </div>
 
           {hasFilter ? (
-            <ProductShelf products={filteredProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+             <ProductShelf view={catalogView} products={filteredProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
           ) : (
             <div className="space-y-16">
-              <ProductShelf eyebrow="الأكثر طلباً" title="مختارات العملاء" products={featuredProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
-              <ProductShelf eyebrow="وصل حديثاً" title="أحدث الوصول" products={newProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
-              <ProductShelf eyebrow="لإكمال تجربتك" title="إكسسوارات مختارة" products={accessoryProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+               <ProductShelf view={catalogView} eyebrow="الأكثر طلباً" title="مختارات العملاء" products={featuredProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+               <ProductShelf view={catalogView} eyebrow="وصل حديثاً" title="أحدث الوصول" products={newProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+               <ProductShelf view={catalogView} eyebrow="لإكمال تجربتك" title="إكسسوارات مختارة" products={accessoryProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
             </div>
           )}
         </section>
@@ -221,8 +246,16 @@ function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-[hsl(var(--foreground)/.1)]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 text-xs text-[hsl(var(--foreground)/.58)] sm:flex-row sm:items-center sm:justify-between lg:px-10"><div><b className="text-sm text-[hsl(var(--foreground))]">نجم عدن موبايل</b><span className="mx-3 text-[hsl(var(--secondary))]">•</span>صالة هواتف منتقاة من صنعاء</div><div className="flex flex-wrap gap-5"><span className="inline-flex items-center gap-2"><Phone size={13} /> 77887578 / 77883537</span><span>© 2025 نجم عدن</span></div></div>
+       <footer className="border-t border-[hsl(var(--foreground)/.1)]">
+         <div className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-8 text-xs text-[hsl(var(--foreground)/.58)] sm:flex-row sm:items-center sm:justify-between lg:px-10">
+           <div className="flex min-w-0 items-center gap-4">
+             <span className="logo-frame logo-frame-footer grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.7)] bg-white p-1">
+               <img src="/assets/nijm-aden-logo.jpeg" alt="شعار نجم عدن موبايل" className="logo-image h-full w-full object-cover" />
+             </span>
+             <div><b className="block text-sm text-[hsl(var(--foreground))]">نجم عدن موبايل</b><span className="mt-1 block">صالة هواتف منتقاة من صنعاء</span></div>
+           </div>
+           <div className="flex flex-wrap gap-5"><span className="inline-flex items-center gap-2"><Phone size={13} /> 77887578 / 77883537</span><span>© 2025 نجم عدن</span></div>
+         </div>
       </footer>
       <button onClick={() => openWhatsApp()} className="wa-float focus-ring fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#1d6844] px-5 py-3 text-sm font-bold text-white"><MessageCircle size={18} /> واتساب</button>
       {selected && <ProductModal product={selected} onClose={() => setSelected(null)} onWhatsApp={() => openWhatsApp(selected.title)} />}
@@ -230,20 +263,21 @@ function Home() {
   );
 }
 
-function ProductShelf({ eyebrow, title, products, onOpen, onWhatsApp }: { eyebrow?: string; title?: string; products: CatalogProduct[]; onOpen: (product: CatalogProduct) => void; onWhatsApp: (productName: string) => void }) {
+function ProductShelf({ eyebrow, title, products, view, onOpen, onWhatsApp }: { eyebrow?: string; title?: string; products: CatalogProduct[]; view: 'large' | 'compact'; onOpen: (product: CatalogProduct) => void; onWhatsApp: (productName: string) => void }) {
   if (!products.length) {
     return <div className="border border-dashed border-[hsl(var(--border))] px-6 py-16 text-center"><Search className="mx-auto mb-4 text-[hsl(var(--foreground)/.4)]" size={26} /><h3 className="font-bold">لم نعثر على منتجات مطابقة</h3><p className="mt-2 text-xs text-[hsl(var(--foreground)/.55)]">جرّب كلمة أخرى أو اختر تصنيفاً مختلفاً.</p></div>;
   }
-  return <div>{eyebrow && title && <div className="mb-5 flex items-end justify-between gap-4"><div><p className="eyebrow mb-2">{eyebrow}</p><h3 className="text-2xl font-extrabold tracking-tight">{title}</h3></div><span className="hidden text-xs text-[hsl(var(--foreground)/.5)] sm:inline-flex">{products.length} منتجات</span></div>}<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{products.map((product, index) => <ProductCard key={`${product.id}-${index}`} product={product} index={index} onOpen={() => onOpen(product)} onWhatsApp={() => onWhatsApp(product.title)} />)}</div></div>;
+   return <div>{eyebrow && title && <div className="mb-5 flex items-end justify-between gap-4"><div><p className="eyebrow mb-2">{eyebrow}</p><h3 className="text-2xl font-extrabold tracking-tight">{title}</h3></div><span className="hidden text-xs text-[hsl(var(--foreground)/.5)] sm:inline-flex">{products.length} منتجات</span></div>}<div className={view === 'large' ? 'grid gap-6 lg:grid-cols-2' : 'grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4'}>{products.map((product, index) => <ProductCard key={`${product.id}-${index}`} product={product} index={index} view={view} onOpen={() => onOpen(product)} onWhatsApp={() => onWhatsApp(product.title)} />)}</div></div>;
 }
 
-function ProductCard({ product, index, onOpen, onWhatsApp }: { product: CatalogProduct; index: number; onOpen: () => void; onWhatsApp: () => void }) {
-  return <article className="product-card rise flex flex-col border border-[hsl(var(--card-border))] bg-[hsl(var(--card))]" style={{ animationDelay: `${index * 90}ms` }}>
+function ProductCard({ product, index, view, onOpen, onWhatsApp }: { product: CatalogProduct; index: number; view: 'large' | 'compact'; onOpen: () => void; onWhatsApp: () => void }) {
+  const compact = view === 'compact';
+  return <article className={`product-card rise flex flex-col border border-[hsl(var(--card-border))] bg-[hsl(var(--card))] ${compact ? 'product-card-compact' : 'product-card-large'}`} style={{ animationDelay: `${index * 90}ms` }}>
     <button onClick={onOpen} className="focus-ring block w-full text-right">
-      <div className="relative overflow-hidden bg-[hsl(var(--muted))] p-4"><img src={product.images[0]} alt={`${product.title} ${product.subtitle}`} className="product-image aspect-square w-full object-cover mix-blend-multiply" />{product.badge && <span className="absolute right-6 top-6 bg-[hsl(var(--primary))] px-3 py-1 text-[10px] font-bold text-[hsl(var(--primary-foreground))]">{product.badge}</span>}<span className="absolute bottom-6 left-6 grid h-9 w-9 place-items-center rounded-full bg-[hsl(var(--background)/.86)] text-[hsl(var(--foreground))]"><Eye size={16} /></span></div>
-      <div className="px-5 pt-5"><div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-extrabold">{product.title}</h3><p className="mt-1 text-xs text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p></div><span className="mt-1 h-3 w-3 rounded-full border border-[hsl(var(--foreground)/.2)]" style={{ background: product.accent }} /></div></div>
+      <div className={`relative overflow-hidden bg-[hsl(var(--muted))] ${compact ? 'p-2.5 sm:p-4' : 'p-4 sm:p-6'}`}><img src={product.images[0]} alt={`${product.title} ${product.subtitle}`} className={`product-image w-full object-cover mix-blend-multiply ${compact ? 'aspect-square' : 'aspect-[1.2]'}`} />{product.badge && <span className={`absolute right-4 top-4 bg-[hsl(var(--primary))] px-3 py-1 text-[10px] font-bold text-[hsl(var(--primary-foreground))] ${compact ? 'max-w-[calc(100%-2rem)] truncate' : ''}`}>{product.badge}</span>}<span className={`absolute grid place-items-center rounded-full bg-[hsl(var(--background)/.86)] text-[hsl(var(--foreground))] ${compact ? 'bottom-3 left-3 h-8 w-8' : 'bottom-5 left-5 h-10 w-10'}`}><Eye size={compact ? 14 : 17} /></span></div>
+      <div className={compact ? 'px-3 pt-3 sm:px-5 sm:pt-5' : 'px-5 pt-5'}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className={`truncate font-extrabold ${compact ? 'text-sm sm:text-lg' : 'text-xl'}`}>{product.title}</h3><p className="mt-1 truncate text-xs text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p></div><span className="mt-1 h-3 w-3 shrink-0 rounded-full border border-[hsl(var(--foreground)/.2)]" style={{ background: product.accent }} /></div></div>
     </button>
-    <div className="flex flex-1 flex-col px-5 pb-5 pt-4"><div className="mb-4 flex flex-wrap gap-2">{product.specs.map((spec) => <span key={spec} className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--foreground)/.61)]">{spec}</span>)}</div><div className="mb-5 flex items-center justify-between gap-2 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><Check size={12} className="text-[hsl(var(--secondary-foreground))]" /> {product.availability}</span><span>{product.category}</span></div><div className="mt-auto grid grid-cols-[1fr_auto] gap-2"><button onClick={onWhatsApp} className="focus-ring inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] px-3 py-3 text-xs font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5"><MessageCircle size={15} /> اسأل عبر واتساب</button><button onClick={onOpen} className="focus-ring grid place-items-center border border-[hsl(var(--border))] px-3" aria-label={`تفاصيل ${product.title}`}><ArrowLeft size={16} /></button></div></div>
+    <div className={`flex flex-1 flex-col ${compact ? 'px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4' : 'px-5 pb-6 pt-4'}`}><div className={`flex flex-wrap gap-2 ${compact ? 'mb-3 max-h-8 overflow-hidden' : 'mb-4'}`}>{product.specs.map((spec) => <span key={spec} className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--foreground)/.61)]">{spec}</span>)}</div><div className={`flex items-center justify-between gap-2 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)] ${compact ? 'mb-3' : 'mb-5'}`}><span className="inline-flex min-w-0 items-center gap-1 truncate"><Check size={12} className="shrink-0 text-[hsl(var(--secondary-foreground))]" /> {product.availability}</span><span className="shrink-0">{product.category}</span></div>{!compact && <div className="mb-5 flex flex-wrap gap-3 border-y border-[hsl(var(--border))] py-3 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><ShieldCheck size={13} className="text-[hsl(var(--secondary-foreground))]" /> فحص شامل</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div>}<div className="mt-auto grid grid-cols-[1fr_auto] gap-2"><button onClick={onWhatsApp} className={`focus-ring inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 ${compact ? 'px-2 py-2.5 text-[10px] sm:px-3 sm:text-xs' : 'px-3 py-3 text-xs'}`}><MessageCircle size={compact ? 14 : 15} /> <span className={compact ? 'hidden sm:inline' : ''}>اسأل عبر واتساب</span></button><button onClick={onOpen} className={`focus-ring grid place-items-center border border-[hsl(var(--border))] ${compact ? 'w-9' : 'px-3'}`} aria-label={`تفاصيل ${product.title}`}><ArrowLeft size={16} /></button></div></div>
   </article>;
 }
 
@@ -254,6 +288,10 @@ function Promise({ icon, title, text }: { icon: ReactNode; title: string; text: 
 function ProductModal({ product, onClose, onWhatsApp }: { product: CatalogProduct; onClose: () => void; onWhatsApp: () => void }) {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState(false);
+  useEffect(() => {
+    setActive(0);
+    setZoom(false);
+  }, [product.id]);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -267,11 +305,11 @@ function ProductModal({ product, onClose, onWhatsApp }: { product: CatalogProduc
   const next = () => setActive((current) => (current + 1) % product.images.length);
   const previous = () => setActive((current) => (current - 1 + product.images.length) % product.images.length);
   return <div className="modal-backdrop fixed inset-0 z-50 grid place-items-center bg-[hsl(220 24% 13%/.76)] p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label={`تفاصيل ${product.title}`} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <div className="modal-panel relative max-h-[94dvh] w-full max-w-5xl overflow-y-auto bg-[hsl(var(--background))] shadow-[var(--shadow-md)]">
+     <div className="modal-panel relative max-h-[94dvh] w-full max-w-5xl min-w-0 overflow-x-hidden overflow-y-auto bg-[hsl(var(--background))] shadow-[var(--shadow-md)]">
       <button onClick={onClose} className="focus-ring absolute left-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-[hsl(var(--background)/.9)]" aria-label="إغلاق"><X size={19} /></button>
       <div className="grid lg:grid-cols-[1.05fr_.95fr]">
-        <div className="bg-[hsl(var(--muted))] p-4 sm:p-8"><div className="relative flex aspect-square items-center justify-center overflow-hidden bg-[hsl(var(--card))]"><img src={product.images[active]} alt={`${product.title} زاوية ${active + 1}`} onClick={() => setZoom(!zoom)} className={`modal-image h-full w-full object-cover mix-blend-multiply ${zoom ? 'zoomed' : ''}`} /><span className="pointer-events-none absolute bottom-4 right-4 flex items-center gap-2 bg-[hsl(var(--background)/.82)] px-3 py-2 text-[10px]"><ZoomIn size={13} /> اضغط للتكبير</span></div><div className="mt-4 flex gap-3 overflow-x-auto pb-1">{product.images.map((image, index) => <button key={`${image}-${index}`} onClick={() => { setActive(index); setZoom(false); }} className={`focus-ring h-16 w-16 shrink-0 overflow-hidden border-2 bg-[hsl(var(--card))] ${active === index ? 'border-[hsl(var(--secondary))]' : 'border-transparent'}`} aria-label={`عرض زاوية ${index + 1}`}><img src={image} alt="" className="h-full w-full object-cover mix-blend-multiply" /></button>)}</div><div className="mt-4 flex justify-between"><button onClick={previous} className="focus-ring inline-flex items-center gap-2 text-xs font-bold" aria-label="الصورة السابقة"><ChevronRight size={16} /> السابقة</button><span className="eyebrow">{String(active + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}</span><button onClick={next} className="focus-ring inline-flex items-center gap-2 text-xs font-bold" aria-label="الصورة التالية">التالية <ChevronLeft size={16} /></button></div></div>
-        <div className="flex flex-col p-7 sm:p-10"><p className="eyebrow mb-5">تفاصيل المنتج</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{product.title}</h2><p className="mt-2 text-sm text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p><div className="my-8 h-px bg-[hsl(var(--border))]" /><div className="space-y-5"><div><span className="eyebrow">المواصفات</span><div className="mt-3 flex flex-wrap gap-2">{product.specs.map((spec) => <span key={spec} className="bg-[hsl(var(--muted))] px-3 py-2 text-xs font-semibold">{spec}</span>)}</div></div><div><span className="eyebrow">اللون</span><p className="mt-2 text-sm">{product.color}</p></div><div><span className="eyebrow">التوفر</span><p className="mt-2 text-sm">{product.availability}</p></div></div><div className="mt-auto pt-10"><button onClick={onWhatsApp} className="focus-ring flex w-full items-center justify-center gap-3 bg-[hsl(var(--primary))] px-5 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-1"><MessageCircle size={18} /> استفسار أو اطلب عبر الواتساب</button><p className="mt-4 text-center text-[11px] leading-6 text-[hsl(var(--foreground)/.52)]">يتوفر التواصل على الرقمين<br /><b className="text-[hsl(var(--foreground)/.78)]">77887578</b> و <b className="text-[hsl(var(--foreground)/.78)]">77883537</b></p><div className="mt-7 flex items-center justify-center gap-5 border-t border-[hsl(var(--border))] pt-6 text-[10px] text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> جودة مضمونة</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div></div></div>
+          <div className="min-w-0 bg-[hsl(var(--muted))] p-4 sm:p-8"><div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[hsl(var(--card))]"><img key={`${product.id}-${active}`} src={product.images[active]} alt={`${product.title} زاوية ${active + 1}`} onClick={() => setZoom(!zoom)} className={`modal-image h-full w-full object-cover mix-blend-multiply ${zoom ? 'zoomed' : ''}`} /><span className="pointer-events-none absolute bottom-4 right-4 flex items-center gap-2 bg-[hsl(var(--background)/.82)] px-3 py-2 text-[10px]"><ZoomIn size={13} /> اضغط للتكبير</span></div><div className="mt-4 flex flex-wrap gap-3 pb-1">{product.images.map((image, index) => <button key={`${image}-${index}`} onClick={() => { setActive(index); setZoom(false); }} className={`focus-ring h-16 w-16 shrink-0 overflow-hidden border-2 bg-[hsl(var(--card))] ${active === index ? 'border-[hsl(var(--secondary))]' : 'border-transparent'}`} aria-label={`عرض زاوية ${index + 1}`}><img src={image} alt="" className="h-full w-full object-cover mix-blend-multiply" /></button>)}</div><div className="mt-4 flex justify-between gap-3"><button onClick={previous} className="focus-ring inline-flex items-center gap-2 text-xs font-bold" aria-label="الصورة السابقة"><ChevronRight size={16} /> السابقة</button><span className="eyebrow shrink-0">{String(active + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}</span><button onClick={next} className="focus-ring inline-flex items-center gap-2 text-xs font-bold" aria-label="الصورة التالية">التالية <ChevronLeft size={16} /></button></div></div>
+         <div className="min-w-0 flex flex-col p-6 sm:p-10"><p className="eyebrow mb-5">تفاصيل المنتج</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{product.title}</h2><p className="mt-2 text-sm text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p><div className="my-8 h-px bg-[hsl(var(--border))]" /><div className="space-y-5"><div><span className="eyebrow">المواصفات</span><div className="mt-3 flex flex-wrap gap-2">{product.specs.map((spec) => <span key={spec} className="bg-[hsl(var(--muted))] px-3 py-2 text-xs font-semibold">{spec}</span>)}</div></div><div><span className="eyebrow">اللون</span><p className="mt-2 text-sm">{product.color}</p></div><div><span className="eyebrow">التوفر</span><p className="mt-2 text-sm">{product.availability}</p></div></div><div className="mt-auto pt-10"><button onClick={onWhatsApp} className="focus-ring flex w-full items-center justify-center gap-3 bg-[hsl(var(--primary))] px-5 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-1"><MessageCircle size={18} /> استفسار أو اطلب عبر الواتساب</button><p className="mt-4 text-center text-[11px] leading-6 text-[hsl(var(--foreground)/.52)]">يتوفر التواصل على الرقمين<br /><b className="text-[hsl(var(--foreground)/.78)]">77887578</b> و <b className="text-[hsl(var(--foreground)/.78)]">77883537</b></p><div className="mt-7 flex flex-wrap items-center justify-center gap-5 border-t border-[hsl(var(--border))] pt-6 text-[10px] text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> جودة مضمونة</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div></div></div>
       </div>
     </div>
   </div>;
