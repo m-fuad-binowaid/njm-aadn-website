@@ -1,9 +1,11 @@
-import { type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, ClipboardCheck, Eye, MessageCircle, Phone, RotateCcw, ShieldCheck, X, ZoomIn } from 'lucide-react';
+import { catalog, type CatalogProduct } from '@/data/catalog';
 import {
   Route,
   Switch,
@@ -14,18 +16,139 @@ import {
 const queryClient = new QueryClient();
 
 function Home() {
+  const [selected, setSelected] = useState<CatalogProduct | null>(null);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const openWhatsApp = (productName = 'كتالوج نجم عدن موبايل') => {
+    const message = `السلام عليكم، أريد الاستفسار عن ${productName}`;
+    window.open(`https://wa.me/96777887578?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
+  useEffect(() => {
+    document.title = 'نجم عدن موبايل — صالة الهواتف الراقية';
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+  }, []);
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Replit Agent is building...
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Your app will appear here once it's ready.
-        </p>
-      </div>
+    <div className="site-shell grain min-h-[100dvh]" dir="rtl">
+      <header className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.86)] backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-10">
+          <a href="#top" className="focus-ring flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center border border-[hsl(var(--secondary)/.8)] text-[hsl(var(--secondary-foreground))]">
+              <span className="font-serif text-xl">ن</span>
+            </span>
+            <span>
+              <strong className="block text-[15px] font-extrabold tracking-tight">نجم عدن موبايل</strong>
+              <span className="eyebrow">مختارات تستحقها</span>
+            </span>
+          </a>
+          <nav className="hidden items-center gap-9 text-sm font-semibold text-[hsl(var(--foreground)/.72)] md:flex">
+            <a className="focus-ring transition-colors hover:text-[hsl(var(--foreground))]" href="#collection">المختارات</a>
+            <a className="focus-ring transition-colors hover:text-[hsl(var(--foreground))]" href="#promise">وعدنا</a>
+            <a className="focus-ring transition-colors hover:text-[hsl(var(--foreground))]" href="#contact">تواصل معنا</a>
+          </nav>
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="focus-ring rounded-full border border-[hsl(var(--foreground)/.14)] px-4 py-2 text-xs font-bold md:hidden" aria-expanded={mobileMenu}>القائمة</button>
+          <button onClick={() => openWhatsApp()} className="focus-ring hidden items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-5 py-3 text-xs font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 sm:flex">
+            <MessageCircle size={16} strokeWidth={1.8} /> تواصل الآن
+          </button>
+        </div>
+        {mobileMenu && <nav className="flex flex-col gap-4 border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 text-sm font-semibold md:hidden"><a href="#collection" onClick={() => setMobileMenu(false)}>المختارات</a><a href="#promise" onClick={() => setMobileMenu(false)}>وعدنا</a><a href="#contact" onClick={() => setMobileMenu(false)}>تواصل معنا</a></nav>}
+      </header>
+
+      <main id="top">
+        <section className="relative isolate overflow-hidden">
+          <div className="hero-grid absolute inset-0 -z-10" />
+          <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-28 lg:pt-24">
+            <div className="rise order-2 lg:order-1">
+              <p className="eyebrow mb-6 flex items-center gap-3"><span className="h-px w-10 bg-[hsl(var(--secondary))]" /> من صنعاء، بذوق مختلف</p>
+              <h1 className="max-w-2xl text-5xl font-extrabold leading-[1.18] tracking-[-.05em] sm:text-6xl lg:text-[5.4rem]">هاتفك القادم<br /><span className="text-[hsl(var(--secondary-foreground)/.6)]">يبدأ من هنا.</span></h1>
+              <p className="mt-7 max-w-md text-[15px] leading-8 text-[hsl(var(--foreground)/.68)]">كتالوج منتقى من الأجهزة التي نحبها. نفحص كل قطعة بعناية، ونترك لك متعة الاختيار بثقة.</p>
+              <div className="mt-9 flex flex-wrap items-center gap-4">
+                <a href="#collection" className="focus-ring inline-flex items-center gap-3 bg-[hsl(var(--primary))] px-6 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-all hover:-translate-y-1 hover:bg-[hsl(var(--foreground)/.88)]">تصفح المختارات <ArrowLeft size={18} /></a>
+                <span className="text-xs text-[hsl(var(--foreground)/.56)]">فحص شامل قبل البيع<br />وضمان تجربة 7 أيام</span>
+              </div>
+              <div className="mt-12 flex items-center gap-5 border-t border-[hsl(var(--foreground)/.12)] pt-6">
+                <div className="flex -space-x-2 space-x-reverse"><span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[hsl(var(--background))] bg-[hsl(var(--secondary))] text-xs font-bold">م</span><span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[hsl(var(--background))] bg-[hsl(220 15% 28%)] text-xs font-bold text-white">ع</span><span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[hsl(var(--background))] bg-[hsl(178 24% 44%)] text-xs font-bold text-white">س</span></div>
+                <p className="text-xs leading-5 text-[hsl(var(--foreground)/.62)]">أكثر من <b className="text-[hsl(var(--foreground))]">200+</b> عميل اختار<br />نجم عدن بثقة</p>
+              </div>
+            </div>
+            <div className="rise rise-delay-2 order-1 flex justify-center lg:order-2">
+              <div className="relative w-full max-w-[520px]">
+                <div className="absolute -inset-8 rounded-full bg-[hsl(var(--secondary)/.12)] blur-3xl" />
+                <div className="relative overflow-hidden border border-[hsl(var(--foreground)/.1)] bg-[hsl(var(--card))] p-4 shadow-[var(--shadow-md)] sm:p-7">
+                  <img src={catalog[0].images[0]} alt="iPhone 16 باللون الأزرق البنفسجي" className="float-slow aspect-[1.04] w-full object-cover mix-blend-multiply" />
+                  <div className="absolute bottom-7 right-7 flex items-center gap-3 bg-[hsl(var(--background)/.88)] px-4 py-3 backdrop-blur-md"><span className="h-2 w-2 rounded-full bg-[hsl(var(--secondary))]" /><span className="text-xs font-bold">وصل حديثاً</span></div>
+                </div>
+                <div className="absolute -bottom-5 -left-3 hidden border border-[hsl(var(--secondary)/.65)] bg-[hsl(var(--background))] px-5 py-4 sm:block"><span className="eyebrow">01 / 04</span><p className="mt-1 font-bold">مختارات نجم عدن</p></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="collection" className="mx-auto max-w-7xl scroll-mt-20 px-5 py-20 lg:px-10 lg:py-28">
+          <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div><p className="eyebrow mb-3">01 — المجموعة</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">مختاراتنا لهذا الأسبوع</h2></div>
+            <p className="max-w-xs text-sm leading-7 text-[hsl(var(--foreground)/.58)]">أجهزة أصلية منتقاة بعين تعرف الفرق، جاهزة لتكون جزءاً من قصتك.</p>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {catalog.map((product, index) => <ProductCard key={product.id} product={product} index={index} onOpen={() => setSelected(product)} />)}
+          </div>
+        </section>
+
+        <section id="promise" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
+          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-10 lg:py-24">
+            <div><p className="eyebrow text-[hsl(var(--secondary))]">02 — وعد نجم عدن</p><h2 className="mt-4 max-w-sm text-4xl font-extrabold leading-[1.3] tracking-tight">الترف ليس<br /><span className="text-[hsl(var(--secondary))]">في السعر فقط.</span></h2><p className="mt-6 max-w-sm text-sm leading-8 text-[hsl(var(--primary-foreground)/.62)]">هو أن تعرف ما تشتريه، ومن يعتني بك بعد الشراء.</p></div>
+            <div className="grid gap-px bg-[hsl(var(--primary-foreground)/.14)] sm:grid-cols-3">
+              <Promise icon={<ShieldCheck />} title="جودة مضمونة" text="أصالة الجهاز وحالته موثقة بوضوح." />
+              <Promise icon={<ClipboardCheck />} title="فحص شامل" text="نختبر كل تفصيلة قبل أن تصل إليك." />
+              <Promise icon={<RotateCcw />} title="7 أيام تجربة" text="خذ وقتك لتتأكد أن الاختيار لك." />
+            </div>
+          </div>
+        </section>
+
+        <section id="contact" className="mx-auto max-w-7xl px-5 py-20 lg:px-10 lg:py-24">
+          <div className="relative overflow-hidden border border-[hsl(var(--secondary)/.42)] bg-[hsl(var(--muted))] px-6 py-12 sm:px-12">
+            <div className="absolute -left-20 -top-28 h-72 w-72 rounded-full border border-[hsl(var(--secondary)/.35)]" /><div className="absolute -left-10 -top-18 h-52 w-52 rounded-full border border-[hsl(var(--secondary)/.25)]" />
+            <div className="relative grid items-center gap-8 md:grid-cols-[1fr_auto]"><div><p className="eyebrow mb-3">03 — على مسافة رسالة</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">وجدت ما يناسبك؟</h2><p className="mt-4 text-sm leading-7 text-[hsl(var(--foreground)/.62)]">أرسل لنا اسم المنتج، وسنعود إليك بكل التفاصيل.</p></div><button onClick={() => openWhatsApp()} className="focus-ring inline-flex items-center justify-center gap-3 bg-[hsl(var(--primary))] px-7 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-1"><MessageCircle size={18} /> استفسار أو اطلب عبر الواتساب</button></div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-[hsl(var(--foreground)/.1)]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 text-xs text-[hsl(var(--foreground)/.58)] sm:flex-row sm:items-center sm:justify-between lg:px-10"><div><b className="text-sm text-[hsl(var(--foreground))]">نجم عدن موبايل</b><span className="mx-3 text-[hsl(var(--secondary))]">•</span>صالة هواتف منتقاة من صنعاء</div><div className="flex flex-wrap gap-5"><span className="inline-flex items-center gap-2"><Phone size={13} /> 77887578 / 77883537</span><span>© 2025 نجم عدن</span></div></div>
+      </footer>
+      <button onClick={() => openWhatsApp()} className="wa-float focus-ring fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#1d6844] px-5 py-3 text-sm font-bold text-white"><MessageCircle size={18} /> واتساب</button>
+      {selected && <ProductModal product={selected} onClose={() => setSelected(null)} onWhatsApp={() => openWhatsApp(selected.title)} />}
     </div>
   );
+}
+
+function ProductCard({ product, index, onOpen }: { product: CatalogProduct; index: number; onOpen: () => void }) {
+  return <article className="product-card rise border border-[hsl(var(--card-border))] bg-[hsl(var(--card))]" style={{ animationDelay: `${index * 90}ms` }}>
+    <button onClick={onOpen} className="focus-ring block w-full text-right">
+      <div className="relative overflow-hidden bg-[hsl(var(--muted))] p-4"><img src={product.images[0]} alt={`${product.title} ${product.subtitle}`} className="product-image aspect-square w-full object-cover mix-blend-multiply" />{product.badge && <span className="absolute right-6 top-6 bg-[hsl(var(--primary))] px-3 py-1 text-[10px] font-bold text-[hsl(var(--primary-foreground))]">{product.badge}</span>}<span className="absolute bottom-6 left-6 grid h-9 w-9 place-items-center rounded-full bg-[hsl(var(--background)/.86)] text-[hsl(var(--foreground))]"><Eye size={16} /></span></div>
+      <div className="p-5"><div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-lg font-extrabold">{product.title}</h3><p className="mt-1 text-xs text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p></div><span className="mt-1 h-3 w-3 rounded-full border border-[hsl(var(--foreground)/.2)]" style={{ background: product.accent }} /></div><div className="mb-5 flex flex-wrap gap-2">{product.specs.map(spec => <span key={spec} className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--foreground)/.61)]">{spec}</span>)}</div><span className="inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.72)]">عرض التفاصيل <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" /></span></div>
+    </button>
+  </article>;
+}
+
+function Promise({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return <div className="bg-[hsl(var(--primary))] p-7"><div className="mb-8 text-[hsl(var(--secondary))]">{icon}</div><h3 className="font-bold">{title}</h3><p className="mt-3 text-xs leading-6 text-[hsl(var(--primary-foreground)/.57)]">{text}</p></div>;
+}
+
+function ProductModal({ product, onClose, onWhatsApp }: { product: CatalogProduct; onClose: () => void; onWhatsApp: () => void }) {
+  const [active, setActive] = useState(0);
+  const [zoom, setZoom] = useState(false);
+  useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = ''; }; }, []);
+  const next = () => setActive((current) => (current + 1) % product.images.length);
+  const previous = () => setActive((current) => (current - 1 + product.images.length) % product.images.length);
+  return <div className="modal-backdrop fixed inset-0 z-50 grid place-items-center bg-[hsl(220 24% 13%/.76)] p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label={`تفاصيل ${product.title}`}>
+    <div className="modal-panel relative max-h-[94dvh] w-full max-w-5xl overflow-y-auto bg-[hsl(var(--background))] shadow-[var(--shadow-md)]">
+      <button onClick={onClose} className="focus-ring absolute left-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-[hsl(var(--background)/.9)]" aria-label="إغلاق"><X size={19} /></button>
+      <div className="grid lg:grid-cols-[1.05fr_.95fr]">
+        <div className="bg-[hsl(var(--muted))] p-4 sm:p-8"><div className="relative flex aspect-square items-center justify-center overflow-hidden bg-[hsl(var(--card))]"><img src={product.images[active]} alt={`${product.title} زاوية ${active + 1}`} onClick={() => setZoom(!zoom)} className={`modal-image h-full w-full object-cover mix-blend-multiply ${zoom ? 'zoomed' : ''}`} /><span className="pointer-events-none absolute bottom-4 right-4 flex items-center gap-2 bg-[hsl(var(--background)/.82)] px-3 py-2 text-[10px]"><ZoomIn size={13} /> اضغط للتكبير</span></div><div className="mt-4 flex gap-3 overflow-x-auto pb-1">{product.images.map((image, index) => <button key={image} onClick={() => { setActive(index); setZoom(false); }} className={`focus-ring h-16 w-16 shrink-0 overflow-hidden border-2 bg-[hsl(var(--card))] ${active === index ? 'border-[hsl(var(--secondary))]' : 'border-transparent'}`}><img src={image} alt="" className="h-full w-full object-cover mix-blend-multiply" /></button>)}</div><div className="mt-4 flex justify-between"><button onClick={previous} className="focus-ring inline-flex items-center gap-2 text-xs font-bold"><ChevronRight size={16} /> السابقة</button><span className="eyebrow">{String(active + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}</span><button onClick={next} className="focus-ring inline-flex items-center gap-2 text-xs font-bold">التالية <ChevronLeft size={16} /></button></div></div>
+        <div className="flex flex-col p-7 sm:p-10"><p className="eyebrow mb-5">تفاصيل المنتج</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{product.title}</h2><p className="mt-2 text-sm text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p><div className="my-8 h-px bg-[hsl(var(--border))]" /><div className="space-y-5"><div><span className="eyebrow">المواصفات</span><div className="mt-3 flex flex-wrap gap-2">{product.specs.map(spec => <span key={spec} className="bg-[hsl(var(--muted))] px-3 py-2 text-xs font-semibold">{spec}</span>)}</div></div><div><span className="eyebrow">اللون</span><p className="mt-2 text-sm">{product.color}</p></div></div><div className="mt-auto pt-10"><button onClick={onWhatsApp} className="focus-ring flex w-full items-center justify-center gap-3 bg-[hsl(var(--primary))] px-5 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-1"><MessageCircle size={18} /> استفسار أو اطلب عبر الواتساب</button><p className="mt-4 text-center text-[11px] leading-6 text-[hsl(var(--foreground)/.52)]">يتوفر التواصل على الرقمين<br /><b className="text-[hsl(var(--foreground)/.78)]">77887578</b> و <b className="text-[hsl(var(--foreground)/.78)]">77883537</b></p><div className="mt-7 flex items-center justify-center gap-5 border-t border-[hsl(var(--border))] pt-6 text-[10px] text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> جودة مضمونة</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div></div></div>
+      </div>
+    </div>
+  </div>;
 }
 
 function Router() {
