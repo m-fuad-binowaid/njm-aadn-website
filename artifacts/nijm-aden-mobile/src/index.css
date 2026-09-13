@@ -107,6 +107,19 @@
     radial-gradient(circle at 5% 6%, hsl(39 58% 65% / .11), transparent 24rem),
     hsl(var(--background));
 }
+.store-topline { letter-spacing: .03em; }
+.store-search { transition: border-color .25s ease, box-shadow .25s ease; }
+.store-search:focus-within { border-color: hsl(var(--secondary) / .8); box-shadow: 0 0 0 3px hsl(var(--secondary) / .12); }
+.category-link { position: relative; color: hsl(var(--foreground) / .58); padding-bottom: .35rem; }
+.category-link::after { content: ''; position: absolute; right: 0; bottom: 0; left: 0; height: 2px; transform: scaleX(0); transform-origin: right; background: hsl(var(--secondary)); transition: transform .25s ease; }
+.category-link:hover, .category-link.active { color: hsl(var(--foreground)); }
+.category-link.active::after, .category-link:hover::after { transform: scaleX(1); }
+.hero-storefront { background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / .28)); }
+.hero-stage { min-height: 340px; }
+.hero-product-image { animation: hero-product-in .55s cubic-bezier(.22,1,.36,1) both; }
+.hero-dot { background: hsl(var(--foreground) / .2); }
+.hero-dot.active { background: hsl(var(--secondary)); }
+.shelf-divider { height: 1px; background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent); }
 .eyebrow {
   color: hsl(var(--secondary-foreground) / .7);
   font-family: var(--app-font-mono);
@@ -129,6 +142,7 @@
 .product-card:hover { transform: translateY(-7px); box-shadow: var(--shadow-md); border-color: hsl(var(--secondary) / .72); }
 .product-image { transition: transform .65s cubic-bezier(.22,1,.36,1); }
 .product-card:hover .product-image { transform: scale(1.045); }
+.product-card button:focus-visible { outline-offset: -3px; }
 .wa-float { box-shadow: 0 12px 28px hsl(149 52% 26% / .28); transition: transform .25s ease, box-shadow .25s ease; }
 .wa-float:hover { transform: translateY(-4px); box-shadow: 0 17px 35px hsl(149 52% 26% / .35); }
 .modal-backdrop { animation: fade-in .25s ease both; }
@@ -149,6 +163,12 @@
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-in { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes float-slow { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+@keyframes hero-product-in { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 639px) {
+  .hero-stage { min-height: 0; }
+  .store-topline { font-size: .64rem; white-space: nowrap; overflow: hidden; }
+  .wa-float { left: 1rem; bottom: 1rem; padding-inline: 1rem; }
 }
