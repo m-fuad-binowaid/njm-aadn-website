@@ -293,7 +293,7 @@ function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }:
   };
 
   return (
-    <header ref={headerRef} className="relative z-20 border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
+    <header ref={headerRef} className="relative z-[1000] border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
         <a href="/" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
           <span className="logo-frame grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.8)] bg-white">
