@@ -174,11 +174,10 @@ function Home() {
           <a href="#promise" className="category-link focus-ring text-xs font-bold">لماذا نجم عدن؟</a>
         </div>
 
-        {mobileMenu && (
-          <div id="mobile-navigation" className="mobile-menu-panel absolute inset-x-0 top-full border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 md:hidden">
+        <div id="mobile-navigation" aria-hidden={!mobileMenu} className={`mobile-menu-panel absolute inset-x-0 top-full border-t border-[hsl(var(--foreground)/.08)] px-5 py-4 md:hidden ${mobileMenu ? 'open' : ''}`}>
             <form className="store-search mb-4 flex items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
               <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
-              <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" />
+              <input autoFocus={mobileMenu} value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" />
             </form>
             <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
               {categoryOptions.map((category) => (
@@ -190,8 +189,7 @@ function Home() {
               <a href="#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link">تواصل معنا</a>
               <button onClick={() => { setMobileMenu(false); openWhatsApp(); }} className="mobile-menu-link accent">استفسار عبر واتساب</button>
             </nav>
-          </div>
-        )}
+        </div>
       </header>
 
       <main id="top">
