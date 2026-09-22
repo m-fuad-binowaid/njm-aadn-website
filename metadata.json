@@ -1,0 +1,6 @@
+{
+  "name": "نجم عدن موبايل",
+  "description": "تشكيلة منتقاة من هواتف آيفون الأصلية والإكسسوارات الفاخرة مع فحص شامل وضمان تجربة 7 أيام وتواصل مباشر عبر واتساب.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

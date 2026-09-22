@@ -1,0 +1,6 @@
+{
+  "name": "نجم عدن موبايل",
+  "description": "المتجر الإلكتروني الفاخر لنجم عدن موبايل بتصميم مخصص للأجهزة الذكية وهوية الأوبسيديان والتيتانيوم والذهب الفاخر",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

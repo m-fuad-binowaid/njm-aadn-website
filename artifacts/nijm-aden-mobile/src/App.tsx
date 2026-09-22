@@ -1,477 +1,1839 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { LogoLoader } from '@/components/LogoLoader';
+import { ProductCardSkeleton } from '@/components/ProductCardSkeleton';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 import NotFound from '@/pages/not-found';
 import {
+  ArrowDown,
   ArrowLeft,
   Check,
   ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ClipboardCheck,
+  Clock,
   Eye,
   Grid2X2,
+  Home as HomeIcon,
   LayoutList,
+  MapPin,
   Menu,
   MessageCircle,
+  Minus,
   Phone,
+  Plus,
   RotateCcw,
   Search,
   ShieldCheck,
   ShoppingBag,
-  SlidersHorizontal,
+  ShoppingCart,
+  Smartphone,
+  Sparkles,
+  Star,
   Tag,
+  Trash2,
+  Truck,
   X,
   ZoomIn,
+  Lock,
 } from 'lucide-react';
-import { catalog, type CatalogProduct } from '@/data/catalog';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import {
+  catalog,
+  type CatalogProduct,
+  type ProductCategory,
+  STORE_CONTACTS,
+} from '@/data/catalog';
+import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { CatalogProvider, useCatalog } from '@/context/CatalogContext';
+import { AdminPinGate } from '@/components/admin/AdminPinGate';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
 
 const queryClient = new QueryClient();
 
-type CategoryKey = 'all' | 'phones' | 'iphone' | 'accessories' | 'earbuds' | 'offers';
-
-const categoryOptions: { key: CategoryKey; label: string }[] = [
-  { key: 'all', label: 'كل المنتجات' },
-  { key: 'phones', label: 'الهواتف' },
-  { key: 'iphone', label: 'آيفون' },
-  { key: 'accessories', label: 'الإكسسوارات' },
-  { key: 'earbuds', label: 'السماعات' },
-  { key: 'offers', label: 'العروض' },
-];
-
-const categoryTiles: { key: CategoryKey; label: string; image: string }[] = [
-  { key: 'iphone', label: 'آيفون', image: '/assets/iphone-blue-front.jpeg' },
-  { key: 'phones', label: 'الهواتف', image: '/assets/iphone-gold-front.jpeg' },
-  { key: 'earbuds', label: 'السماعات والصوتيات', image: '/assets/joyroom.jpeg' },
-  { key: 'accessories', label: 'الإكسسوارات', image: '/assets/camera-control.jpeg' },
-];
-
-const categoryPaths: Record<CategoryKey, string> = {
-  all: '/category/products',
-  phones: '/category/phones',
-  iphone: '/category/iphones',
-  accessories: '/category/accessories',
-  earbuds: '/category/earbuds',
-  offers: '/category/offers',
-};
-
-const categorySlugs: Record<string, CategoryKey> = {
-  products: 'all',
-  all: 'all',
-  phones: 'phones',
-  iphones: 'iphone',
-  iphone: 'iphone',
-  accessories: 'accessories',
-  earbuds: 'earbuds',
-  offers: 'offers',
-};
-
-const categoryMeta: Record<CategoryKey, { label: string; description: string }> = {
-  all: { label: 'كل المنتجات', description: 'اكتشف كامل مختارات نجم عدن من الهواتف والإكسسوارات.' },
-  phones: { label: 'الهواتف', description: 'هواتف منتقاة بعناية مع تفاصيل واضحة وحالة موثقة.' },
-  iphone: { label: 'آيفون', description: 'مختارات آيفون بألوان وسعات مختلفة لتجد ما يناسبك.' },
-  accessories: { label: 'الإكسسوارات', description: 'إكسسوارات عملية تكمل تجربتك اليومية.' },
-  earbuds: { label: 'السماعات والصوتيات', description: 'صوت واضح وتجربة لاسلكية للاستخدام اليومي.' },
-  offers: { label: 'العروض', description: 'منتجات مختارة بعلامات مميزة وتواصل مباشر لمعرفة التفاصيل.' },
-};
-
-const heroMessages = [
-  { kicker: 'وصل حديثاً', title: 'تجربة راقية', highlight: 'تبدأ من اختيارك.', description: 'أجهزة أصلية منتقاة بعناية، مع فحص واضح وتجربة تمنحك راحة البال قبل اتخاذ القرار.' },
-  { kicker: 'مختارات نجم عدن', title: 'تقنية تليق', highlight: 'بذوقك.', description: 'ألوان مميزة، حالات موثقة، وتفاصيل نوضحها لك قبل أن تختار.' },
-  { kicker: 'تواصل مباشر', title: 'اسأل عن جهازك', highlight: 'بكل ثقة.', description: 'أرسل لنا المنتج الذي أعجبك، وسنشاركك كل التفاصيل عبر واتساب.' },
-];
-
-function openWhatsApp(productName = 'كتالوج نجم عدن موبايل') {
-  const message = `السلام عليكم، أريد الاستفسار عن ${productName}`;
-  window.open(`https://wa.me/96777887578?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+// Cart Item Model for Multi-Product WhatsApp Inquiry
+export interface InquiryCartItem {
+  id: string;
+  product: CatalogProduct;
+  selectedCapacity: string;
+  quantity: number;
 }
 
-function filterCatalog(category: CategoryKey, search = '') {
-  const normalizedSearch = search.trim().toLowerCase();
-  return catalog.filter((product) => {
-    const matchesCategory =
-      category === 'all' ||
-      (category === 'phones' && product.category === 'هواتف') ||
-      (category === 'iphone' && product.category === 'هواتف' && product.title.toLowerCase().includes('iphone')) ||
-      (category === 'accessories' && product.category === 'إكسسوارات') ||
-      (category === 'earbuds' && product.tags.includes('سماعات')) ||
-      (category === 'offers' && Boolean(product.badge));
-    const searchable = [product.title, product.subtitle, product.category, product.color, ...product.specs, ...product.tags].join(' ').toLowerCase();
-    return matchesCategory && (!normalizedSearch || searchable.includes(normalizedSearch));
+// Category definition for pills and navigation
+export interface CategoryFilterItem {
+  key: ProductCategory;
+  label: string;
+  iconName?: string;
+  count: number;
+}
+
+const CATEGORY_ITEMS: { key: ProductCategory; label: string }[] = [
+  { key: 'الكل', label: 'الكل' },
+  { key: 'هواتف آيفون', label: 'هواتف آيفون' },
+  { key: 'أجهزة مستعملة ونظيفة', label: 'أجهزة مستعملة ونظيفة' },
+  { key: 'سامسونج', label: 'سامسونج' },
+  { key: 'سماعات وساعات', label: 'سماعات وساعات' },
+  { key: 'إكسسوارات وحماية', label: 'إكسسوارات وحماية' },
+];
+
+// Helper to construct formatted Arabic WhatsApp URL for cart
+function buildCartWhatsAppUrl(items: InquiryCartItem[], customNote?: string, customPhone?: string): string {
+  const phone = customPhone || STORE_CONTACTS.whatsapp2 || STORE_CONTACTS.whatsapp1;
+  let text = `السلام عليكم ورحمة الله وبركاته،\nأود الاستفسار وتأكيد التوفر والتسعيرة للمنتجات التالية من *نجم عدن موبايل*:\n\n`;
+
+  items.forEach((item, index) => {
+    text += `${index + 1}) *${item.product.title}*\n`;
+    text += `   • السعة/النوع: ${item.selectedCapacity}\n`;
+    text += `   • الحالة: ${item.product.condition}`;
+    if (item.product.batteryHealth) {
+      text += ` (صحة البطارية: ${item.product.batteryHealth})`;
+    }
+    text += `\n   • الكمية: ${item.quantity}\n\n`;
   });
+
+  const totalUnits = items.reduce((sum, i) => sum + i.quantity, 0);
+  text += `— إجمالي عدد القطع: ${totalUnits} قطعة\n`;
+
+  if (customNote && customNote.trim()) {
+    text += `— ملاحظة العميل: ${customNote.trim()}\n`;
+  }
+
+  text += `\nالرجاء إفادتي بالأسعار الحالية وتأكيد موعد الاستلام من المعرض (ردسي مول - عدن). شكراً!`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
+// Helper to construct WhatsApp URL for single product direct inquiry
+function buildSingleProductWhatsAppUrl(product: CatalogProduct, capacity?: string, customPhone?: string): string {
+  const phone = customPhone || STORE_CONTACTS.whatsapp1;
+  const chosenCapacity = capacity || product.defaultCapacity;
+  let text = `السلام عليكم ورحمة الله،\nأود الاستفسار الفوري عن توفر وسعر الجهاز التالي في نجم عدن موبايل:\n\n`;
+  text += `*${product.title}*\n`;
+  text += `• السعة: ${chosenCapacity}\n`;
+  text += `• الحالة: ${product.condition}`;
+  if (product.batteryHealth) {
+    text += ` (صحة البطارية: ${product.batteryHealth})`;
+  }
+  text += `\n• اللون: ${product.color}\n`;
+  text += `\nهل هو متوفر حالياً للاستلام من صالة ردسي مول بعدن؟ شكراً!`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
+// Helper for direct WhatsApp general chat
+function openDirectWhatsApp(message?: string, customPhone?: string) {
+  const phone = customPhone || STORE_CONTACTS.whatsapp1;
+  const text = message || 'السلام عليكم، أود الاستفسار عن الأجهزة والعروض المتوفرة في صالة نجم عدن موبايل.';
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+}
+
+// ---------------------------------------------------------------------
+// Main Storefront Component
+// ---------------------------------------------------------------------
 function Home() {
-  const [selected, setSelected] = useState<CatalogProduct | null>(null);
-  const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
-  const [search, setSearch] = useState('');
-  const [catalogView, setCatalogView] = useState<'large' | 'compact'>('large');
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [, setLocation] = useLocation();
-  const heroProducts = useMemo(() => catalog.slice(0, 3), []);
-  const heroProduct = heroProducts[heroIndex] ?? heroProducts[0];
-  const normalizedSearch = search.trim().toLowerCase();
-  const hasFilter = activeCategory !== 'all' || normalizedSearch.length > 0;
+  const { toast } = useToast();
+  const { products, settings } = useCatalog();
 
-  const filteredProducts = useMemo(() => {
-    return filterCatalog(activeCategory, search);
-  }, [activeCategory, normalizedSearch]);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('najm_aden_admin_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
+  const [viewMode, setViewMode] = useState<'store' | 'admin'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'admin' || window.location.pathname.startsWith('/admin')) {
+        return 'admin';
+      }
+    }
+    return 'store';
+  });
+
+  // Listen for browser popstate or URL changes
   useEffect(() => {
-    document.title = 'نجم عدن موبايل — متجر الهواتف والإكسسوارات';
-    document.documentElement.lang = 'ar';
-    document.documentElement.dir = 'rtl';
+    const handleUrlChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'admin' || window.location.pathname.startsWith('/admin')) {
+        setViewMode('admin');
+      } else {
+        setViewMode('store');
+      }
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
+  const [cart, setCart] = useState<InquiryCartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('najm_aden_inquiry_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [activeCategory, setActiveCategory] = useState<ProductCategory>('الكل');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileLayout, setMobileLayout] = useState<'grid-2' | 'grid-1'>('grid-2');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Initial Luxury Brand Splash Entrance Loader
   useEffect(() => {
-    const timer = window.setInterval(() => setHeroIndex((current) => (current + 1) % heroProducts.length), 6500);
-    return () => window.clearInterval(timer);
-  }, [heroProducts.length]);
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+      setTimeout(() => setShowSplash(false), 450);
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!heroProduct) return null;
+  // Sync cart to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('najm_aden_inquiry_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.error('Failed to save cart to localStorage', e);
+    }
+  }, [cart]);
 
-  const featuredProducts = filteredProducts.filter((product) => product.featured);
-  const newProducts = filteredProducts.filter((product) => product.isNew);
-  const accessoryProducts = filteredProducts.filter((product) => product.category === 'إكسسوارات');
+  // Set document title
+  useEffect(() => {
+    document.title = 'نجم عدن موبايل | هواتف آيفون وسامسونج الأصلية وإكسسوارات فاخرة';
+  }, []);
+
+  // Filter products with small debounce animation
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return products.filter((product) => {
+      const matchCategory =
+        activeCategory === 'الكل' || product.category === activeCategory;
+      const matchSearch =
+        !query ||
+        product.title.toLowerCase().includes(query) ||
+        product.subtitle.toLowerCase().includes(query) ||
+        product.color.toLowerCase().includes(query) ||
+        product.condition.toLowerCase().includes(query) ||
+        product.capacities.some((c) => c.toLowerCase().includes(query)) ||
+        product.specs.some((s) => s.toLowerCase().includes(query)) ||
+        product.tags.some((t) => t.toLowerCase().includes(query));
+      return matchCategory && matchSearch;
+    });
+  }, [products, activeCategory, searchQuery]);
+
+  // Calculate counts per category
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { الكل: products.length };
+    products.forEach((item) => {
+      counts[item.category] = (counts[item.category] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
+
+  const totalCartCount = useMemo(() => {
+    return cart.reduce((acc, item) => acc + item.quantity, 0);
+  }, [cart]);
+
+  // Add to inquiry cart
+  const handleAddToCart = (product: CatalogProduct, capacity?: string) => {
+    const chosenCapacity = capacity || product.defaultCapacity;
+    const cartItemId = `${product.id}-${chosenCapacity}`;
+
+    setCart((prev) => {
+      const existingIndex = prev.findIndex((i) => i.id === cartItemId);
+      if (existingIndex > -1) {
+        const next = [...prev];
+        next[existingIndex] = {
+          ...next[existingIndex],
+          quantity: next[existingIndex].quantity + 1,
+        };
+        return next;
+      }
+      return [
+        ...prev,
+        {
+          id: cartItemId,
+          product,
+          selectedCapacity: chosenCapacity,
+          quantity: 1,
+        },
+      ];
+    });
+
+    toast({
+      title: 'تمت الإضافة لسلة الاستفسار',
+      description: `${product.title} (${chosenCapacity})`,
+      action: (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="rounded bg-[#111111] px-2.5 py-1 text-[11px] font-black text-white hover:bg-[#d4af37] hover:text-[#111111] transition-colors"
+        >
+          عرض السلة
+        </button>
+      ),
+    });
+  };
+
+  // Update item quantity
+  const handleUpdateQuantity = (cartItemId: string, delta: number) => {
+    setCart((prev) => {
+      return prev
+        .map((item) => {
+          if (item.id === cartItemId) {
+            const nextQty = item.quantity + delta;
+            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as InquiryCartItem[];
+    });
+  };
+
+  // Remove from cart
+  const handleRemoveFromCart = (cartItemId: string) => {
+    setCart((prev) => prev.filter((item) => item.id !== cartItemId));
+  };
+
+  // Clear entire cart
+  const handleClearCart = () => {
+    setCart([]);
+  };
+
+  // Select category with smooth skeleton transition (250ms - 400ms)
+  const handleSelectCategory = (cat: ProductCategory) => {
+    if (cat === activeCategory && !searchQuery) return;
+    setIsFiltering(true);
+    setActiveCategory(cat);
+    if (searchQuery) setSearchQuery('');
+    setTimeout(() => {
+      setIsFiltering(false);
+    }, 320);
+  };
+
+  const scrollToCatalog = () => {
+    const el = document.getElementById('catalog-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle Admin Mode
+  if (viewMode === 'admin') {
+    if (!isAdminAuthenticated) {
+      return (
+        <AdminPinGate
+          expectedPin={settings.adminPin || '2026'}
+          onSuccess={() => {
+            setIsAdminAuthenticated(true);
+            try {
+              sessionStorage.setItem('najm_aden_admin_auth', 'true');
+            } catch {}
+          }}
+          onExit={() => {
+            setViewMode('store');
+            const url = new URL(window.location.href);
+            url.searchParams.delete('view');
+            window.history.pushState({}, '', url.pathname === '/admin' ? '/' : url.pathname + (url.search ? url.search : ''));
+          }}
+        />
+      );
+    }
+
+    return (
+      <AdminDashboard
+        onExitToStore={() => {
+          setViewMode('store');
+          const url = new URL(window.location.href);
+          url.searchParams.delete('view');
+          window.history.pushState({}, '', url.pathname === '/admin' ? '/' : url.pathname + (url.search ? url.search : ''));
+        }}
+        onLockSession={() => {
+          setIsAdminAuthenticated(false);
+          try {
+            sessionStorage.removeItem('najm_aden_admin_auth');
+          } catch {}
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="site-shell grain min-h-[100dvh]" dir="rtl">
-      <div className="store-topline bg-[hsl(var(--primary))] px-5 py-2 text-center text-[11px] font-semibold text-[hsl(var(--primary-foreground))]">
-        <span>فحص شامل قبل البيع</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تجربة 7 أيام</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تواصل مباشر عبر واتساب</span>
+    <div className="min-h-screen bg-[#0A0D14] text-slate-100 font-sans overflow-x-hidden selection:bg-[#D4AF37] selection:text-black" dir="rtl">
+      {/* 0. Luxury Branded Splash Intro (Initial Load State) */}
+      {showSplash && (
+        <div
+          className={`fixed inset-0 z-[300] flex items-center justify-center bg-[#0A0D14] transition-opacity duration-500 ${
+            isInitialLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <LogoLoader text="جاري تجهيز أحدث الأجهزة..." />
+        </div>
+      )}
+
+      {/* 1. Top Guarantee & Quality Trust Ribbon */}
+      <div className="bg-[#0A0D14] text-slate-200 border-b border-slate-800/80 px-3 py-1.5 text-[11px] font-bold">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 overflow-x-auto whitespace-nowrap no-scrollbar">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 text-[#FFF3C4]">
+              <Sparkles size={13} className="text-[#D4AF37]" /> {settings.announcementText || 'أجهزة أصلية معتمدة • فحص 30 نقطة • ردسي مول - عدن'}
+            </span>
+          </div>
+
+          <a
+            href={`tel:${settings.phone1 || STORE_CONTACTS.phone1}`}
+            className="flex items-center gap-1 text-[#FFF3C4] hover:text-[#D4AF37] transition-colors shrink-0"
+          >
+            <Phone size={12} className="text-[#D4AF37]" /> {settings.phone1 || STORE_CONTACTS.phone1}
+          </a>
+        </div>
       </div>
 
-      <StoreHeader activeCategory={activeCategory} search={search} onSearchChange={setSearch} onOpenWhatsApp={openWhatsApp} />
+      {/* 2. Compact Sticky Mobile Header */}
+      <MobileHeader
+        isDrawerOpen={isDrawerOpen}
+        onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
+        isSearchOpen={isSearchOpen}
+        onToggleSearch={() => {
+          setIsSearchOpen(!isSearchOpen);
+          if (!isSearchOpen) {
+            setTimeout(() => searchInputRef.current?.focus(), 100);
+          }
+        }}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchInputRef={searchInputRef}
+        cartCount={totalCartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
 
-      <main id="top">
-        <section className="hero-banner relative isolate overflow-hidden">
-          <div className="hero-banner-wash absolute inset-0 -z-10" />
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 sm:py-14 lg:grid-cols-[1fr_.9fr] lg:px-10 lg:py-16">
-            <div className="hero-banner-copy rise order-2 lg:order-1">
-              <p className="eyebrow mb-5 flex items-center gap-3 text-[hsl(var(--secondary))]"><span className="h-px w-10 bg-[hsl(var(--secondary))]" /> {heroMessages[heroIndex]?.kicker}</p>
-              <h1 className="max-w-2xl text-4xl font-black leading-[1.14] tracking-[-.04em] text-white sm:text-6xl lg:text-[5.2rem]">{heroMessages[heroIndex]?.title}<br /><span className="text-[hsl(var(--secondary))]">{heroMessages[heroIndex]?.highlight}</span></h1>
-              <p className="mt-6 max-w-lg text-[15px] font-semibold leading-8 text-white/75">{heroMessages[heroIndex]?.description}</p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <button onClick={() => { setActiveCategory('all'); setSearch(''); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="focus-ring inline-flex items-center gap-3 bg-[hsl(var(--secondary))] px-6 py-4 text-sm font-black text-[hsl(var(--secondary-foreground))] transition-all hover:-translate-y-1 hover:bg-white">تصفح المنتجات <ArrowLeft size={18} /></button>
-                <button onClick={() => openWhatsApp(heroProduct.title)} className="focus-ring inline-flex items-center gap-2 border border-white/30 px-5 py-4 text-sm font-bold text-white transition-colors hover:border-[hsl(var(--secondary))]"><MessageCircle size={17} /> اسأل الآن</button>
-              </div>
-              <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-white/15 pt-5 text-xs font-semibold text-white/75">
-                <span className="inline-flex items-center gap-2"><Check size={14} className="text-[hsl(var(--secondary))]" /> أصالة وحالة موثقة</span>
-                <span className="inline-flex items-center gap-2"><Check size={14} className="text-[hsl(var(--secondary))]" /> تجربة 7 أيام</span>
-              </div>
+      <main className="w-full pb-28">
+        {/* 3. Mobile Hero Section (Vertical Mobile Stack - Zero Black Voids) */}
+        <MobileHero
+          onExploreCatalog={scrollToCatalog}
+          onDirectInquiry={() => openDirectWhatsApp()}
+        />
+
+        {/* 4. Horizontal Swipe Category Pills (Sticky Navigation) */}
+        <section
+          id="catalog-section"
+          className="sticky top-14 sm:top-16 z-30 bg-[#0A0D14]/90 backdrop-blur-md border-b border-slate-800/80 py-2.5 px-3 sm:px-6 shadow-md"
+        >
+          <div className="mx-auto max-w-7xl flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5">
+              {CATEGORY_ITEMS.map((item) => {
+                const isActive = activeCategory === item.key;
+                const count = categoryCounts[item.key] || 0;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handleSelectCategory(item.key)}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black transition-all shrink-0 tap-scale ${
+                      isActive
+                        ? 'bg-gradient-to-r from-[#D4AF37] to-[#E5B869] text-[#0A0D14] shadow-[0_0_15px_rgba(212,175,55,0.35)] border border-[#D4AF37]'
+                        : 'bg-[#121722]/85 text-[#CBD5E1] border border-slate-800 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                        isActive
+                          ? 'bg-[#0A0D14] text-[#E5B869]'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="hero-banner-art rise rise-delay-2 order-1">
-              <div className="hero-product-orbit absolute -inset-10 rounded-full border border-white/10" />
-              <div className="hero-product-orbit hero-product-orbit-small absolute -inset-3 rounded-full border border-[hsl(var(--secondary)/.45)]" />
-              <img key={heroProduct.id} src={heroProduct.images[0]} alt={`${heroProduct.title} ${heroProduct.subtitle}`} className="hero-banner-product relative z-10 w-full object-cover mix-blend-multiply" />
-              <div className="hero-product-label absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-white/95 px-4 py-3 text-xs font-black text-[hsl(var(--primary))] shadow-lg sm:bottom-8 sm:left-8"><span className="h-2 w-2 rounded-full bg-[hsl(var(--secondary))]" /> {heroProduct.badge ?? 'متوفر الآن'}</div>
-              <div className="hero-product-name absolute right-3 top-3 z-20 border border-white/20 bg-[hsl(var(--primary)/.65)] px-4 py-3 text-xs font-bold text-white backdrop-blur-md sm:right-8 sm:top-8">{heroProduct.title} — {heroProduct.color}</div>
+
+            {/* Layout switch on mobile */}
+            <div className="hidden sm:flex items-center gap-1 bg-[#121722] border border-slate-800 p-0.5 rounded-lg shrink-0">
+              <button
+                type="button"
+                onClick={() => setMobileLayout('grid-2')}
+                className={`p-1.5 rounded text-xs transition-colors ${
+                  mobileLayout === 'grid-2' ? 'bg-[#D4AF37] text-[#0A0D14]' : 'text-slate-400 hover:text-white'
+                }`}
+                title="عرض شبكي مزدوج"
+              >
+                <Grid2X2 size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileLayout('grid-1')}
+                className={`p-1.5 rounded text-xs transition-colors ${
+                  mobileLayout === 'grid-1' ? 'bg-[#D4AF37] text-[#0A0D14]' : 'text-slate-400 hover:text-white'
+                }`}
+                title="عرض فردي مفصل"
+              >
+                <LayoutList size={15} />
+              </button>
             </div>
-          </div>
-          <div className="hero-dots relative z-20 flex items-center justify-center gap-2 pb-7">
-            {heroProducts.map((product, index) => <button key={product.id} onClick={() => setHeroIndex(index)} className={`hero-dot focus-ring h-2.5 rounded-full transition-all ${heroIndex === index ? 'active w-9' : 'w-2.5'}`} aria-label={`عرض الشريحة ${index + 1}`} />)}
           </div>
         </section>
 
-        <section id="categories" className="category-section mx-auto max-w-7xl scroll-mt-36 px-5 py-10 lg:px-10 lg:py-14">
-          <div className="mb-7 flex items-end justify-between gap-4">
-            <div><p className="eyebrow mb-2">تصفح سريع</p><h2 className="text-2xl font-black tracking-tight sm:text-3xl">تسوق حسب التصنيف</h2></div>
-            <span className="hidden text-xs font-semibold text-[hsl(var(--foreground)/.55)] sm:inline">اختر ما يناسبك</span>
-          </div>
-          <div className="category-grid grid grid-cols-2 gap-5 sm:grid-cols-4 sm:gap-7">
-            {categoryTiles.map((category) => <button key={category.key} onClick={() => setLocation(categoryPaths[category.key])} className={`category-tile focus-ring group ${activeCategory === category.key ? 'active' : ''}`} aria-pressed={activeCategory === category.key}><span className="category-image mx-auto block overflow-hidden rounded-full border-4 border-[hsl(var(--muted))] bg-[hsl(var(--muted))] p-2 transition-all group-hover:border-[hsl(var(--secondary))] group-hover:shadow-[var(--shadow)]"><img src={category.image} alt="" className="h-full w-full rounded-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-110" /></span><span className="mt-4 block text-sm font-black text-[hsl(var(--foreground)/.78)] transition-colors group-hover:text-[hsl(var(--foreground))]">{category.label}</span></button>)}
-          </div>
-        </section>
+        {/* 5. Mobile-Optimized 2-Column Product Grid */}
+        <section className="mx-auto max-w-7xl px-3 sm:px-6 pt-4 sm:pt-6">
+          {/* Active section info */}
+          <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#D4AF37] shadow-[0_0_8px_#D4AF37]" />
+              <span className="text-white font-black text-sm">
+                {activeCategory === 'الكل' ? 'جميع الأجهزة المتوفرة' : activeCategory}
+              </span>
+              <span className="text-slate-400">({filteredProducts.length})</span>
+            </span>
 
-        <section id="products" className="mx-auto max-w-7xl scroll-mt-36 px-5 pb-16 pt-10 lg:px-10 lg:pb-24">
-            <div className="store-section-heading mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <p className="eyebrow mb-3">{hasFilter ? 'نتائج التصفح' : '01 — اكتشف المختارات'}</p>
-              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{hasFilter ? 'المنتجات المطابقة' : 'منتجات تستحق الاختيار'}</h2>
+            {/* Quick layout toggle for mobile screens */}
+            <div className="flex sm:hidden items-center gap-1 bg-[#121722] border border-slate-800 px-1 py-0.5 rounded-md">
+              <button
+                onClick={() => setMobileLayout('grid-2')}
+                className={`px-1.5 py-0.5 text-[10px] rounded font-bold transition-colors ${
+                  mobileLayout === 'grid-2' ? 'bg-[#D4AF37] text-[#0A0D14]' : 'text-slate-400'
+                }`}
+              >
+                شبكي
+              </button>
+              <button
+                onClick={() => setMobileLayout('grid-1')}
+                className={`px-1.5 py-0.5 text-[10px] rounded font-bold transition-colors ${
+                  mobileLayout === 'grid-1' ? 'bg-[#D4AF37] text-[#0A0D14]' : 'text-slate-400'
+                }`}
+              >
+                قائمة
+              </button>
             </div>
-             <div className="flex flex-wrap items-center gap-4">
-               <div className="catalog-view-toggle flex items-center gap-1 border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-1" role="group" aria-label="طريقة عرض المنتجات">
-                 <button
-                   type="button"
-                   onClick={() => setCatalogView('large')}
-                   className={`focus-ring view-toggle-button inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition-colors ${catalogView === 'large' ? 'active' : ''}`}
-                   aria-pressed={catalogView === 'large'}
-                   title="العرض الكبير"
-                 >
-                   <LayoutList size={15} /> <span>كبير</span>
-                 </button>
-                 <button
-                   type="button"
-                   onClick={() => setCatalogView('compact')}
-                   className={`focus-ring view-toggle-button inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition-colors ${catalogView === 'compact' ? 'active' : ''}`}
-                   aria-pressed={catalogView === 'compact'}
-                   title="العرض الشبكي"
-                 >
-                   <Grid2X2 size={15} /> <span>شبكة</span>
-                 </button>
-               </div>
-               <div className="flex items-center gap-2 text-xs text-[hsl(var(--foreground)/.55)]"><Tag size={14} className="text-[hsl(var(--secondary-foreground))]" /> {filteredProducts.length} منتجات متاحة</div>
-             </div>
           </div>
 
-          {hasFilter ? (
-             <ProductShelf view={catalogView} products={filteredProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+          {/* Product cards or skeleton loader with zero CLS layout matching */}
+          {isFiltering ? (
+            <div
+              className={`grid gap-2.5 sm:gap-4 transition-opacity duration-300 ease-in-out ${
+                mobileLayout === 'grid-1'
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                  : 'grid-cols-2 lg:grid-cols-4'
+              }`}
+            >
+              {[...Array(mobileLayout === 'grid-1' ? 4 : 6)].map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-800 bg-[#121722]/60 p-8 sm:p-12 text-center my-4">
+              <Search size={36} className="mx-auto mb-2 text-slate-500" />
+              <h3 className="text-base font-bold text-white">لا توجد منتجات مطابقة لبحثك</h3>
+              <p className="mt-1 text-xs text-slate-400">
+                جرب البحث بكلمة أخرى أو اختر قسماً آخر من شريط التصنيفات
+              </p>
+              <button
+                onClick={() => {
+                  handleSelectCategory('الكل');
+                }}
+                className="mt-4 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#E5B869] px-4 py-2 text-xs font-black text-[#0A0D14] hover:shadow-lg transition-all"
+              >
+                عرض كافة الأجهزة
+              </button>
+            </div>
           ) : (
-            <div className="space-y-16">
-               <ProductShelf view={catalogView} eyebrow="الأكثر طلباً" title="مختارات العملاء" products={featuredProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
-               <ProductShelf view={catalogView} eyebrow="وصل حديثاً" title="أحدث الوصول" products={newProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
-               <ProductShelf view={catalogView} eyebrow="لإكمال تجربتك" title="إكسسوارات مختارة" products={accessoryProducts} onOpen={setSelected} onWhatsApp={openWhatsApp} />
+            <div
+              className={`grid gap-2.5 sm:gap-4 transition-opacity duration-300 ease-in-out ${
+                mobileLayout === 'grid-1'
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                  : 'grid-cols-2 lg:grid-cols-4'
+              }`}
+            >
+              {filteredProducts.map((product) => (
+                <MobileProductCard
+                  key={product.id}
+                  product={product}
+                  onOpen={() => setSelectedProduct(product)}
+                  onAddToCart={handleAddToCart}
+                  onSingleInquiry={(capacity) => {
+                    const url = buildSingleProductWhatsAppUrl(product, capacity, settings.whatsapp1);
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                  }}
+                />
+              ))}
             </div>
           )}
         </section>
 
-        <section id="promise" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
-          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-10 lg:py-24">
-            <div><p className="eyebrow text-[hsl(var(--secondary))]">02 — وعد نجم عدن</p><h2 className="mt-4 max-w-sm text-4xl font-extrabold leading-[1.3] tracking-tight">الشراء بثقة<br /><span className="text-[hsl(var(--secondary))]">يبدأ من الوضوح.</span></h2><p className="mt-6 max-w-sm text-sm leading-8 text-[hsl(var(--primary-foreground)/.62)]">نعرض لك حالة المنتج بوضوح، ونبقى قريبين منك قبل وبعد الاختيار.</p></div>
-            <div className="grid gap-px bg-[hsl(var(--primary-foreground)/.14)] sm:grid-cols-3">
-              <Promise icon={<ShieldCheck />} title="جودة مضمونة" text="أصالة الجهاز وحالته موثقة بوضوح." />
-              <Promise icon={<ClipboardCheck />} title="فحص شامل" text="نختبر كل تفصيلة قبل أن تصل إليك." />
-              <Promise icon={<RotateCcw />} title="7 أيام تجربة" text="خذ وقتك لتتأكد أن الاختيار لك." />
+        {/* 6. Guarantee & Showroom Location Section */}
+        <section className="mx-auto max-w-7xl px-3 sm:px-6 pt-10">
+          <div className="rounded-2xl border border-[#D4AF37]/40 bg-gradient-to-br from-[#121722] via-[#0F1420] to-[#0A0D14] p-5 sm:p-8 text-white shadow-2xl relative overflow-hidden">
+            {/* Subtle Gold Ambient Glow */}
+            <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-[#D4AF37]/10 blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 grid gap-6 md:grid-cols-[1.2fr_0.8fr] items-center">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 px-3 py-1 text-[11px] font-bold text-[#FFF3C4] mb-2.5">
+                  <ShieldCheck size={14} className="text-[#D4AF37]" /> فحص 30 نقطة معتمد
+                </span>
+                <h3 className="text-lg sm:text-2xl font-black leading-snug">
+                  جهازك مفحوص بدقة مع تغليف ملكي وبطاقة ضمان 7 أيام
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  في نجم عدن موبايل، نضمن لك فحص حقيقي لكافة وظائف الجهاز (البطارية، الشاشة، الكاميرا، الأزرار، والشبكة)، مع هدية بوكس التغليف الفاخر وكارت الفحص المعتمد.
+                </p>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-semibold text-slate-200">
+                  <div className="flex items-center gap-1.5">
+                    <Check size={14} className="text-[#D4AF37]" /> فحص كامل للبطارية
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check size={14} className="text-[#D4AF37]" /> ضمان تجربة 7 أيام
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check size={14} className="text-[#D4AF37]" /> تغليف فاخر هدية
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check size={14} className="text-[#D4AF37]" /> دعم وصيانة مباشرة
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2.5">
+                  <button
+                    onClick={() => openDirectWhatsApp('السلام عليكم، أود معرفة تفاصيل الضمان والفحص للأجهزة في نجم عدن موبايل.', settings.whatsapp1)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-black text-white hover:bg-[#20BA59] active:scale-95 transition-all shadow"
+                  >
+                    <MessageCircle size={15} /> استفسر عن الضمان
+                  </button>
+                  <a
+                    href={`tel:${settings.phone1 || STORE_CONTACTS.phone1}`}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:border-[#D4AF37] hover:text-white transition-colors"
+                  >
+                    <Phone size={14} className="text-[#D4AF37]" /> اتصال بالمبيعات
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex justify-center w-full mt-6 md:mt-0">
+                <div className="relative before:absolute before:-inset-2 before:bg-gradient-to-r before:from-amber-500/10 before:to-yellow-600/10 before:rounded-3xl before:blur-xl before:-z-10 w-full max-w-md mx-auto">
+                  <img
+                    src="/packaging.jpg"
+                    alt="بوكس التغليف الملكي نجم عدن"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/assets/packaging.jpeg';
+                    }}
+                    className="w-full max-w-md mx-auto rounded-2xl object-cover border border-slate-800/80 shadow-[0_15px_30px_rgba(0,0,0,0.6)]"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="contact" className="mx-auto max-w-7xl px-5 py-16 lg:px-10 lg:py-24">
-          <div className="relative overflow-hidden border border-[hsl(var(--secondary)/.42)] bg-[hsl(var(--muted))] px-6 py-12 sm:px-12">
-            <div className="absolute -left-20 -top-28 h-72 w-72 rounded-full border border-[hsl(var(--secondary)/.35)]" /><div className="absolute -left-10 -top-18 h-52 w-52 rounded-full border border-[hsl(var(--secondary)/.25)]" />
-            <div className="relative grid items-center gap-8 md:grid-cols-[1fr_auto]"><div><p className="eyebrow mb-3">03 — على مسافة رسالة</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">وجدت ما يناسبك؟</h2><p className="mt-4 text-sm leading-7 text-[hsl(var(--foreground)/.62)]">أرسل لنا اسم المنتج، وسنعود إليك بكل التفاصيل.</p></div><button onClick={() => openWhatsApp()} className="focus-ring inline-flex items-center justify-center gap-3 bg-[hsl(var(--primary))] px-7 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-1"><MessageCircle size={18} /> استفسار أو اطلب عبر الواتساب</button></div>
+        {/* 7. Showroom Location & Contact */}
+        <section className="mx-auto max-w-7xl px-3 sm:px-6 pt-6">
+          <div className="rounded-2xl border border-slate-800 bg-[#121722]/90 p-4 sm:p-6 shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#0A0D14] border border-[#D4AF37] grid place-items-center text-[#D4AF37] shrink-0 shadow-[0_0_10px_rgba(212,175,55,0.2)]">
+                  <MapPin size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white">موقع صالة العرض في عدن</h4>
+                  <p className="text-xs text-slate-300 mt-0.5">{settings.location || STORE_CONTACTS.location}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1 font-medium">
+                    <Clock size={12} className="text-[#D4AF37]" /> {settings.workingHours || STORE_CONTACTS.workingHours}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDirectWhatsApp('السلام عليكم، أود زيارة المعرض في ردسي مول، ما هي الأجهزة المتوفرة اليوم؟', settings.whatsapp1)}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A2232] border border-slate-700 px-4 py-2.5 text-xs font-bold text-white hover:border-[#D4AF37] hover:bg-[#20293D] transition-colors"
+                >
+                  <MessageCircle size={15} className="text-[#25D366]" /> تأكيد التوفر قبل الزيارة
+                </button>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-       <footer className="border-t border-[hsl(var(--foreground)/.1)]">
-         <div className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-8 text-xs text-[hsl(var(--foreground)/.58)] sm:flex-row sm:items-center sm:justify-between lg:px-10">
-           <div className="flex min-w-0 items-center gap-4">
-             <span className="logo-frame logo-frame-footer grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.7)] bg-white p-1">
-               <img src="/assets/nijm-aden-logo.jpeg" alt="شعار نجم عدن موبايل" className="logo-image h-full w-full object-cover" />
-             </span>
-             <div><b className="block text-sm text-[hsl(var(--foreground))]">نجم عدن موبايل</b><span className="mt-1 block">صالة هواتف منتقاة من صنعاء</span></div>
-           </div>
-           <div className="flex flex-wrap gap-5"><span className="inline-flex items-center gap-2"><Phone size={13} /> 77887578 / 77883537</span><span>© 2025 نجم عدن</span></div>
-         </div>
+      {/* 8. Desktop/Tablet Footer */}
+      <footer className="border-t border-slate-800/80 bg-[#0A0D14] text-slate-400 text-xs pb-24 sm:pb-8 pt-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800/60">
+            <BrandLogo />
+            <div className="flex items-center gap-4 text-xs font-bold text-slate-300">
+              <a href={`tel:${settings.phone1 || STORE_CONTACTS.phone1}`} className="hover:text-[#D4AF37] transition-colors">
+                هاتف: {settings.phone1 || STORE_CONTACTS.phone1}
+              </a>
+              <span className="text-[#D4AF37]">•</span>
+              <a href={`tel:${settings.phone2 || STORE_CONTACTS.phone2}`} className="hover:text-[#D4AF37] transition-colors">
+                هاتف: {settings.phone2 || STORE_CONTACTS.phone2}
+              </a>
+            </div>
+          </div>
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
+            <div>
+              جميع الحقوق محفوظة © {new Date().getFullYear()} نجم عدن موبايل. تصميم مخصص وعالي الأداء للهواتف الذكية.
+            </div>
+            <button
+              onClick={() => {
+                setViewMode('admin');
+                const url = new URL(window.location.href);
+                url.searchParams.set('view', 'admin');
+                window.history.pushState({}, '', url.toString());
+              }}
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors py-1.5 px-3 rounded-lg border border-slate-800 bg-[#121722]/80 hover:bg-[#161D2B] cursor-pointer"
+              title="لوحة الإدارة والمخزون"
+            >
+              <Lock size={12} className="text-[#D4AF37]" />
+              <span>لوحة الإدارة والمخزون</span>
+            </button>
+          </div>
+        </div>
       </footer>
-      <button onClick={() => openWhatsApp()} className="wa-float focus-ring fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#1d6844] px-5 py-3 text-sm font-bold text-white"><MessageCircle size={18} /> واتساب</button>
-       {selected && <ProductModal product={selected} onClose={() => setSelected(null)} onWhatsApp={() => openWhatsApp(selected.title)} />}
+
+      {/* ============================================================== */}
+      {/* 9. THUMB-ZONE NAVIGATION & APP DOCK (CRITICAL FOR MOBILE)      */}
+      {/* ============================================================== */}
+      <nav
+        className="mobile-bottom-dock flex items-center justify-around px-2 py-1 max-w-md mx-auto sm:max-w-none"
+        aria-label="شريط التنقل السريع"
+      >
+        {/* 1) الرئيسية (Home) */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveCategory('الكل');
+            setSearchQuery('');
+            scrollToTop();
+          }}
+          className="dock-item-btn"
+          aria-label="الرئيسية"
+        >
+          <div className="dock-icon-wrapper">
+            <HomeIcon size={20} />
+          </div>
+          <span>الرئيسية</span>
+        </button>
+
+        {/* 2) الكتالوج (Catalog) */}
+        <button
+          type="button"
+          onClick={scrollToCatalog}
+          className="dock-item-btn"
+          aria-label="الكتالوج"
+        >
+          <div className="dock-icon-wrapper">
+            <Grid2X2 size={20} />
+          </div>
+          <span>الكتالوج</span>
+        </button>
+
+        {/* 3) سلة الاستفسار (Cart with real-time floating badge counter) */}
+        <button
+          type="button"
+          onClick={() => setIsCartOpen(true)}
+          className="dock-item-btn relative"
+          aria-label="سلة الاستفسار"
+        >
+          <div className="dock-icon-wrapper relative">
+            <ShoppingCart size={20} />
+            {totalCartCount > 0 && (
+              <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-black text-[#0A0D14] shadow-[0_0_8px_rgba(212,175,55,0.9)] animate-pulse">
+                {totalCartCount}
+              </span>
+            )}
+          </div>
+          <span>سلة الاستفسار</span>
+        </button>
+
+        {/* 4) واتساب المبيعات (High-contrast WhatsApp button for instant 1-tap support) */}
+        <button
+          type="button"
+          onClick={() => openDirectWhatsApp()}
+          className="dock-item-btn text-[#25D366] hover:text-[#20BA59]"
+          aria-label="واتساب المبيعات"
+        >
+          <div className="dock-icon-wrapper flex items-center justify-center h-7 w-7 rounded-full bg-[#25D366] text-white shadow-[0_0_10px_rgba(37,211,102,0.4)]">
+            <MessageCircle size={17} className="fill-white" />
+          </div>
+          <span className="text-[#25D366] font-bold">واتساب المبيعات</span>
+        </button>
+      </nav>
+
+      {/* ============================================================== */}
+      {/* 10. NATIVE-STYLE MOBILE CART (BOTTOM SHEET DRAWER)              */}
+      {/* ============================================================== */}
+      {isCartOpen &&
+        createPortal(
+          <MobileCartBottomSheet
+            items={cart}
+            onClose={() => setIsCartOpen(false)}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveFromCart}
+            onClearCart={handleClearCart}
+            whatsappNumber={settings.whatsapp2 || settings.whatsapp1}
+          />,
+          document.body
+        )}
+
+      {/* ============================================================== */}
+      {/* 11. SIDE SLIDE-OVER CATEGORY DRAWER                             */}
+      {/* ============================================================== */}
+      {isDrawerOpen &&
+        createPortal(
+          <MobileSideDrawer
+            activeCategory={activeCategory}
+            onSelectCategory={(cat) => {
+              handleSelectCategory(cat);
+              setIsDrawerOpen(false);
+              scrollToCatalog();
+            }}
+            onClose={() => setIsDrawerOpen(false)}
+            onOpenCart={() => {
+              setIsDrawerOpen(false);
+              setIsCartOpen(true);
+            }}
+            cartCount={totalCartCount}
+            onOpenAdmin={() => {
+              setViewMode('admin');
+              const url = new URL(window.location.href);
+              url.searchParams.set('view', 'admin');
+              window.history.pushState({}, '', url.toString());
+            }}
+          />,
+          document.body
+        )}
+
+      {/* ============================================================== */}
+      {/* 12. MULTI-ANGLE PRODUCT MODAL                                  */}
+      {/* ============================================================== */}
+      {selectedProduct &&
+        createPortal(
+          <ProductDetailsModal
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            onAddToCart={(prod, cap) => {
+              handleAddToCart(prod, cap);
+            }}
+            onDirectWhatsApp={(prod, cap) => {
+              const url = buildSingleProductWhatsAppUrl(prod, cap, settings.whatsapp1);
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }}
+          />,
+          document.body
+        )}
     </div>
   );
 }
 
-function StoreHeader({ activeCategory, search, onSearchChange, onOpenWhatsApp }: { activeCategory: CategoryKey; search: string; onSearchChange: (value: string) => void; onOpenWhatsApp: (productName?: string) => void }) {
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const headerRef = useRef<HTMLElement>(null);
-  const menuLayerRef = useRef<HTMLDivElement>(null);
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!mobileMenu) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const closeOnOutsidePress = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!headerRef.current?.contains(target) && !menuLayerRef.current?.contains(target)) setMobileMenu(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileMenu(false);
-    };
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('pointerdown', closeOnOutsidePress);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [mobileMenu]);
-
-  const goToCategory = (category: CategoryKey) => {
-    setMobileMenu(false);
-    setLocation(categoryPaths[category]);
-  };
-
-  const mobileNavigation = (
-    <div ref={menuLayerRef} id="mobile-navigation" aria-hidden={!mobileMenu} className={`mobile-menu-layer md:hidden ${mobileMenu ? 'open' : ''}`}>
-      <button type="button" className="mobile-menu-backdrop" onClick={() => setMobileMenu(false)} aria-label="إغلاق القائمة" tabIndex={mobileMenu ? 0 : -1} />
-      <aside className="mobile-menu-drawer" role="dialog" aria-modal="true" aria-label="قائمة متجر نجم عدن">
-        <div className="mobile-drawer-heading">
-          <div>
-            <p className="eyebrow">نجم عدن موبايل</p>
-            <h2>القائمة الرئيسية</h2>
-          </div>
-          <button type="button" onClick={() => setMobileMenu(false)} className="focus-ring mobile-drawer-close" aria-label="إغلاق القائمة" tabIndex={mobileMenu ? 0 : -1}><X size={20} /></button>
-        </div>
-        <form className="store-search mobile-drawer-search mb-5 flex items-center gap-3 border px-4 py-3" onSubmit={(event) => { event.preventDefault(); setMobileMenu(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-          <Search size={17} className="shrink-0" />
-          <input autoFocus={mobileMenu} value={search} onChange={(event) => onSearchChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="ابحث عن منتج..." aria-label="البحث في المنتجات" tabIndex={mobileMenu ? 0 : -1} />
-        </form>
-        <nav className="mobile-menu-list" aria-label="التنقل في المتجر">
-          {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`mobile-menu-link ${activeCategory === category.key ? 'active' : ''}`} aria-current={activeCategory === category.key ? 'page' : undefined} tabIndex={mobileMenu ? 0 : -1}>{category.label}</a>)}
-          <a href="/#promise" onClick={() => setMobileMenu(false)} className="mobile-menu-link" tabIndex={mobileMenu ? 0 : -1}>لماذا نجم عدن؟</a>
-          <a href="/#contact" onClick={() => setMobileMenu(false)} className="mobile-menu-link" tabIndex={mobileMenu ? 0 : -1}>تواصل معنا</a>
-          <button onClick={() => { setMobileMenu(false); onOpenWhatsApp(); }} className="mobile-menu-link accent" tabIndex={mobileMenu ? 0 : -1}>استفسار عبر واتساب</button>
-        </nav>
-      </aside>
+// ---------------------------------------------------------------------
+// Component: Brand Logo (Static Local Asset /assets/logo.png)
+// ---------------------------------------------------------------------
+function BrandLogo({
+  className = '',
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`relative flex items-center group cursor-pointer ${className}`}>
+      <img
+        src="/assets/logo.png"
+        alt="نجم عدن موبايل"
+        className="h-10 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_14px_rgba(212,175,55,0.45)]"
+      />
     </div>
   );
+}
+
+// ---------------------------------------------------------------------
+// Component: Sticky Glassmorphic Header
+// ---------------------------------------------------------------------
+function MobileHeader({
+  isDrawerOpen,
+  onToggleDrawer,
+  isSearchOpen,
+  onToggleSearch,
+  searchQuery,
+  onSearchChange,
+  searchInputRef,
+  cartCount,
+  onOpenCart,
+}: {
+  isDrawerOpen: boolean;
+  onToggleDrawer: () => void;
+  isSearchOpen: boolean;
+  onToggleSearch: () => void;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  searchInputRef: React.RefObject<HTMLInputElement | null>;
+  cartCount: number;
+  onOpenCart: () => void;
+}) {
+  return (
+    <header className="sticky top-0 z-40 backdrop-blur-md bg-[#0A0D14]/85 border-b border-slate-800/80 transition-all">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6">
+        <div className="flex h-14 sm:h-16 items-center justify-between gap-3">
+          {/* Right (RTL): Drawer Toggle + Brand Logo */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={onToggleDrawer}
+              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-[#121722]/80 text-slate-200 hover:border-[#D4AF37]/50 hover:text-white active:scale-95 transition-all"
+              aria-label="القائمة الجانبية"
+            >
+              <Menu size={20} />
+            </button>
+
+            {/* Seamless Brand Identity with star pulse on hover */}
+            <a href="/" className="inline-flex items-center">
+              <BrandLogo compact={false} />
+            </a>
+          </div>
+
+          {/* Center: Modern Search Bar (Translucent with Gold Ring on Focus) */}
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
+            <div className="relative w-full flex items-center rounded-xl bg-[#121722]/80 border border-slate-700/60 px-3 py-2 transition-all focus-within:border-[#D4AF37] focus-within:ring-1 focus-within:ring-[#D4AF37]/80">
+              <Search size={16} className="text-[#D4AF37] shrink-0 ml-2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="ابحث عن جهازك المفضل، سعة، أو ملحق..."
+                className="w-full bg-transparent text-xs text-slate-100 outline-none placeholder:text-slate-400 font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange('')}
+                  className="text-slate-400 hover:text-white"
+                  aria-label="مسح نص البحث"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Left (RTL): Action Icons (Search on mobile + Cart with Gold Counter + WhatsApp Support) */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Mobile Search Toggle */}
+            <button
+              type="button"
+              onClick={onToggleSearch}
+              className={`md:hidden grid h-10 w-10 place-items-center rounded-xl border transition-all ${
+                isSearchOpen
+                  ? 'bg-[#D4AF37] text-[#0A0D14] border-[#D4AF37]'
+                  : 'border-slate-800 bg-[#121722]/80 text-slate-200 hover:border-slate-700'
+              }`}
+              aria-label="البحث عن جهاز"
+            >
+              <Search size={18} />
+            </button>
+
+            {/* WhatsApp Quick Support Button */}
+            <a
+              href={`https://wa.me/${STORE_CONTACTS.whatsapp1}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار والدعم المباشر من مبيعات نجم عدن موبايل.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-[#25D366]/15 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366] hover:text-white active:scale-95 transition-all text-xs font-black shadow-sm"
+              title="دعم فوري عبر واتساب"
+            >
+              <MessageCircle size={17} />
+              <span className="hidden sm:inline">دعم واتساب</span>
+            </a>
+
+            {/* Cart Icon in Header with Real-Time Gold Badge Counter */}
+            <button
+              type="button"
+              onClick={onOpenCart}
+              className="relative grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-[#121722]/80 text-slate-200 hover:border-[#D4AF37]/60 hover:text-white active:scale-95 transition-all"
+              aria-label="سلة الاستفسار"
+            >
+              <ShoppingCart size={18} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[9px] font-black text-[#0A0D14] shadow-[0_0_8px_rgba(212,175,55,0.8)]">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Expandable Search Input (Mobile Screen Dropdown) */}
+        {isSearchOpen && (
+          <div className="pb-3 pt-1 border-t border-slate-800/80 animate-fadeIn md:hidden">
+            <div className="flex items-center gap-2 rounded-xl border border-[#D4AF37] bg-[#121722] px-3 py-2 shadow-lg">
+              <Search size={16} className="text-[#D4AF37] shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="ابحث عن جهازك المفضل، سعة، أو ملحق..."
+                className="w-full bg-transparent text-xs text-white outline-none placeholder:text-slate-400 font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange('')}
+                  className="text-slate-400 hover:text-white"
+                  aria-label="مسح نص البحث"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Component: 2-Column Split Hero Section (Attachment 2 Luxury Burgundy iPhone)
+// ---------------------------------------------------------------------
+function MobileHero({
+  onExploreCatalog,
+  onDirectInquiry,
+}: {
+  onExploreCatalog: () => void;
+  onDirectInquiry: () => void;
+}) {
+  return (
+    <section className="mx-auto max-w-7xl px-3 sm:px-6 pt-3 sm:pt-6 pb-8 sm:pb-12">
+      <div className="relative rounded-2xl bg-gradient-to-b from-[#0F1420] via-[#121722] to-[#0A0D14] border border-slate-800/80 shadow-2xl p-5 sm:p-8 lg:p-10 text-white">
+        {/* Subtle Dual Ambient Radial Glow (Champagne Gold + Deep Burgundy Halo) */}
+        <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-[480px] sm:h-[480px] rounded-full bg-gradient-to-tr from-[#8B1538]/30 via-[#D4AF37]/15 to-transparent blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-60 h-60 rounded-full bg-[#D4AF37]/10 blur-3xl pointer-events-none" />
+
+        {/* 2-Column Split Layout */}
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+          {/* RIGHT COLUMN: Content & Direct CTAs */}
+          <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-right">
+            {/* Micro-Pill Tag */}
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#121722]/90 border border-[#D4AF37]/45 px-3.5 py-1.5 text-[10px] sm:text-xs font-bold text-[#FFF3C4] shadow-[0_0_15px_rgba(212,175,55,0.15)] mb-3 sm:mb-4">
+              <span className="text-[#D4AF37]">✨</span>
+              <span>أجهزة أصلية معتمدة</span>
+              <span className="text-[#D4AF37]">•</span>
+              <span>فحص 30 نقطة</span>
+              <span className="text-[#D4AF37]">•</span>
+              <span>ضمان تجربة 7 أيام</span>
+            </div>
+
+            {/* Main Title: Bold High-Impact Gradient Typography */}
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black leading-tight sm:leading-tight tracking-tight">
+              <span className="bg-gradient-to-l from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                هواتف آيفون الأصلية
+              </span>{' '}
+              <br className="hidden sm:inline" />
+              <span className="bg-gradient-to-l from-[#FFF3C4] via-[#E5B869] to-[#D4AF37] bg-clip-text text-transparent">
+                بأفضل أسعار صالات عدن
+              </span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm lg:text-base text-slate-300 max-w-xl leading-relaxed font-medium">
+              أجهزة جديدة بكراتينها ومستعملة بحالة الوكالة مع تغليف ملكي معتمد وتسعير فوري عبر الواتساب.
+            </p>
+
+            {/* Direct CTA Action Buttons (Positioned directly under text) */}
+            <div className="mt-5 sm:mt-6 w-full max-w-md flex flex-col sm:flex-row items-stretch gap-2.5 sm:gap-3">
+              {/* Primary CTA: WhatsApp Green */}
+              <button
+                onClick={onDirectInquiry}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3.5 text-xs sm:text-sm font-black text-white hover:bg-[#20BA59] active:scale-95 transition-all shadow-[0_4px_20px_rgba(37,211,102,0.35)]"
+              >
+                <MessageCircle size={18} className="fill-white" />
+                <span>استفسار وتسعير فوري عبر واتساب</span>
+              </button>
+
+              {/* Secondary CTA: Dark Slate with subtle gold border */}
+              <button
+                onClick={onExploreCatalog}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-[#121722]/90 hover:border-[#D4AF37]/60 hover:bg-[#1A2232] px-5 py-3.5 text-xs sm:text-sm font-bold text-slate-200 active:scale-95 transition-all"
+              >
+                <span>تصفح أجهزة اليوم</span>
+                <ArrowDown size={15} className="text-[#D4AF37]" />
+              </button>
+            </div>
+          </div>
+
+          {/* LEFT COLUMN: Hero Visual (Phone Showcase in Mobile View) */}
+          <div className="lg:col-span-5 relative flex justify-center items-center py-4 lg:py-6 bg-transparent">
+            <div className="relative w-full max-w-[280px] sm:max-w-[340px] flex items-center justify-center bg-transparent">
+              {/* Subtle Ambient Radial Gradient Behind Phone Container */}
+              <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-rose-950/20 via-transparent to-transparent blur-2xl pointer-events-none" />
+
+              {/* Showcase Image directly matching requested spec */}
+              <img
+                src="/logo3.jpg"
+                alt="iPhone 18 Pro Max Burgundy"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/assets/logo3.jpg';
+                }}
+                className="w-full max-w-[280px] sm:max-w-[340px] mx-auto object-contain drop-shadow-[0_15px_35px_rgba(159,18,57,0.25)] relative z-10"
+              />
+
+              {/* Floating Badge: ⚡ بطارية 100% */}
+              <div className="absolute top-2 right-1 sm:right-2 z-20 backdrop-blur-md bg-slate-900/80 border border-slate-700/60 text-amber-400 text-xs px-3 py-1 rounded-full shadow-lg inline-flex items-center gap-1.5">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                <span>⚡</span>
+                <span className="font-bold text-slate-100">بطارية 100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Component: Mobile Product Card (Decluttered & Minimalist)
+// ---------------------------------------------------------------------
+function MobileProductCard({
+  product,
+  onOpen,
+  onAddToCart,
+  onSingleInquiry,
+}: {
+  product: CatalogProduct;
+  onOpen: () => void;
+  onAddToCart: (p: CatalogProduct, capacity?: string) => void;
+  onSingleInquiry: (capacity?: string) => void;
+}) {
+  const [selectedCap] = useState(product.defaultCapacity);
+  const [justAdded, setJustAdded] = useState(false);
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToCart(product, selectedCap);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1200);
+  };
+
+  const handleQuickChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSingleInquiry(selectedCap);
+  };
+
+  // Clean title without english brackets
+  const cleanTitle = product.title.replace(/\s*\([^)]*\)/g, '').trim();
+
+  // Minimalist storage indicator: sleek inline row showing available capacities (e.g., "128G | 256G | 512G")
+  const formattedCapacities =
+    product.capacities && product.capacities.length > 0
+      ? product.capacities.map((c) => c.replace(/B/i, '')).join(' | ')
+      : null;
+
+  return (
+    <article
+      onClick={onOpen}
+      className="group relative flex flex-col justify-between rounded-2xl border border-slate-800/80 bg-[#121722]/90 p-3 sm:p-3.5 shadow-lg hover:border-[#D4AF37]/50 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all cursor-pointer overflow-hidden"
+    >
+      <div>
+        {/* TOP: Single, elegant pill badge only */}
+        <div className="flex items-center justify-start mb-2">
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wide ${
+              product.condition.includes('جديد')
+                ? 'bg-[#D4AF37] text-[#0A0D14]'
+                : 'bg-slate-800 text-slate-300 border border-slate-700/80'
+            }`}
+          >
+            {product.condition}
+          </span>
+        </div>
+
+        {/* IMAGE: Clean centered device photo on a subtle dark elevated pad */}
+        <div className="relative flex items-center justify-center bg-[#181F2E]/50 rounded-xl mb-2.5 border border-slate-800/40 overflow-hidden">
+          <img
+            src={product.images[0]}
+            alt={cleanTitle}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/assets/packaging.jpeg';
+            }}
+            className={`w-full h-36 mx-auto rounded-xl transition-transform duration-300 group-hover:scale-105 ${
+              product.images[0].includes('packaging')
+                ? 'object-cover'
+                : 'object-contain p-2.5 mix-blend-multiply dark:mix-blend-normal'
+            }`}
+            loading="lazy"
+          />
+        </div>
+
+        {/* TITLE: Clean, non-truncated Arabic device name with color in a muted small caption below it */}
+        <h3
+          className="text-xs sm:text-sm font-black text-slate-100 leading-snug group-hover:text-[#D4AF37] transition-colors"
+          title={cleanTitle}
+        >
+          {cleanTitle}
+        </h3>
+
+        {product.color && (
+          <p className="mt-0.5 text-[11px] text-slate-400 font-medium">
+            {product.color}
+          </p>
+        )}
+
+        {/* SPECS: Minimalist storage indicator: sleek inline row */}
+        {formattedCapacities && (
+          <div className="mt-1.5 text-[10px] font-bold text-slate-400 tracking-wider">
+            {formattedCapacities}
+          </div>
+        )}
+      </div>
+
+      {/* BOTTOM ACTIONS (COMPACT & BALANCED): Dual trigger */}
+      <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center gap-2">
+        {/* 1) Primary WhatsApp Button: Green pill button labeled "تسعير فوري" with gentle entrance pulse */}
+        <button
+          type="button"
+          onClick={handleQuickChat}
+          className="bg-[#25D366] text-black font-bold text-xs py-2 px-3 flex-1 flex items-center justify-center gap-1.5 rounded-xl hover:bg-[#20BA59] active:scale-95 transition-all shadow-sm animate-gentle-cta"
+          aria-label={`تسعير فوري عبر واتساب لجهاز ${cleanTitle}`}
+        >
+          <MessageCircle size={15} className="fill-black text-black" />
+          <span>تسعير فوري</span>
+        </button>
+
+        {/* 2) Secondary Cart Add: Sleek dark square icon button (+) to add to the inquiry cart */}
+        <button
+          type="button"
+          onClick={handleAdd}
+          className={`h-9 w-9 shrink-0 grid place-items-center rounded-xl border transition-all active:scale-90 ${
+            justAdded
+              ? 'bg-emerald-600 border-emerald-500 text-white'
+              : 'bg-[#181F2E] border-slate-700/80 text-slate-200 hover:border-[#D4AF37] hover:text-[#D4AF37]'
+          }`}
+          title="إضافة إلى سلة الاستفسار"
+          aria-label={`إضافة ${cleanTitle} إلى سلة الاستفسار`}
+        >
+          {justAdded ? <Check size={16} /> : <Plus size={16} />}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Component: Native-Style Mobile Cart (Bottom Sheet Drawer)
+// ---------------------------------------------------------------------
+function MobileCartBottomSheet({
+  items,
+  onClose,
+  onUpdateQuantity,
+  onRemoveItem,
+  onClearCart,
+  whatsappNumber,
+}: {
+  items: InquiryCartItem[];
+  onClose: () => void;
+  onUpdateQuantity: (id: string, delta: number) => void;
+  onRemoveItem: (id: string) => void;
+  onClearCart: () => void;
+  whatsappNumber?: string;
+}) {
+  const [customNote, setCustomNote] = useState('');
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleSendToWhatsApp = () => {
+    if (items.length === 0) return;
+    const url = buildCartWhatsAppUrl(items, customNote, whatsappNumber);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <>
-    <header ref={headerRef} className="relative z-[1000] border-b border-[hsl(var(--foreground)/.09)] bg-[hsl(var(--background)/.9)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-4 lg:px-10">
-        <a href="/" className="focus-ring flex min-w-0 shrink-0 items-center gap-3">
-          <span className="logo-frame grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-[hsl(var(--secondary)/.8)] bg-white">
-            <img src="/assets/nijm-aden-logo.jpeg" alt="شعار نجم عدن موبايل" className="logo-image h-full w-full object-cover" />
-          </span>
-          <span><strong className="block text-[15px] font-extrabold tracking-tight">نجم عدن موبايل</strong><span className="eyebrow">مختارات تستحقها</span></span>
-        </a>
-        <form className="store-search hidden min-w-0 flex-1 items-center gap-3 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3 md:flex" onSubmit={(event) => { event.preventDefault(); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-          <Search size={17} className="shrink-0 text-[hsl(var(--foreground)/.48)]" />
-          <input value={search} onChange={(event) => onSearchChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[hsl(var(--foreground)/.45)]" placeholder="ابحث عن جهاز أو إكسسوار..." aria-label="البحث في المنتجات" />
-          {search && <button type="button" onClick={() => onSearchChange('')} className="focus-ring text-[hsl(var(--foreground)/.5)]" aria-label="مسح البحث"><X size={15} /></button>}
-        </form>
-        <div className="mr-auto flex items-center gap-2">
-          <button onClick={() => onOpenWhatsApp()} className="focus-ring hidden items-center gap-2 border border-[hsl(var(--primary))] px-4 py-3 text-xs font-bold text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] sm:inline-flex"><MessageCircle size={15} /> تواصل الآن</button>
-          <button onClick={() => setMobileMenu((open) => !open)} className="focus-ring grid h-11 w-11 place-items-center border border-[hsl(var(--border))] md:hidden" aria-expanded={mobileMenu} aria-controls="mobile-navigation" aria-label={mobileMenu ? 'إغلاق القائمة' : 'فتح القائمة'}>{mobileMenu ? <X size={19} /> : <Menu size={19} />}</button>
-          <a href="/#products" className="focus-ring hidden h-11 w-11 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--foreground)/.72)] sm:grid" aria-label="المنتجات"><ShoppingBag size={18} /></a>
+      <div
+        className="bottom-sheet-backdrop"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="bottom-sheet-container bg-[#0F131C] text-slate-100 border-t border-[#D4AF37]/35"
+        role="dialog"
+        aria-modal="true"
+        aria-label="سلة الاستفسار والتسعيرة"
+      >
+        {/* Drag handle */}
+        <div className="pt-3 pb-1 cursor-grab active:cursor-grabbing">
+          <div className="h-1.5 w-12 bg-slate-750 bg-slate-700 rounded-full mx-auto" />
         </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={18} className="text-[#D4AF37]" />
+            <h3 className="text-sm font-black text-white">
+              سلة الاستفسار والتسعيرة
+            </h3>
+            <span className="rounded-full bg-[#D4AF37] px-2 py-0.5 text-[10px] font-black text-[#0A0D14] shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+              {totalItems}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {items.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearCart}
+                className="text-[11px] font-bold text-slate-400 hover:text-rose-400 transition-colors"
+              >
+                تفريغ
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-8 w-8 place-items-center rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700"
+              aria-label="إغلاق السلة"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Items List or Empty State */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {items.length === 0 ? (
+            <div className="py-10 text-center space-y-3">
+              <div className="h-14 w-14 rounded-full bg-slate-800/80 border border-slate-700 text-[#D4AF37] mx-auto grid place-items-center">
+                <ShoppingCart size={28} />
+              </div>
+              <h4 className="text-sm font-bold text-white">سلة الاستفسار فارغة حالياً</h4>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                أضف الهواتف والإكسسوارات التي تريد السؤال عنها لتجهيز رسالة واتساب واحدة مرتبة مباشرة لخدمة العملاء.
+              </p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E5B869] px-4 py-2 text-xs font-black text-[#0A0D14] hover:shadow-lg transition-all"
+              >
+                تصفح الأجهزة والكتالوج
+              </button>
+            </div>
+          ) : (
+            <>
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-[#0B0F17] p-2.5 shadow-sm"
+                >
+                  {/* Thumbnail */}
+                  <div className="h-14 w-14 rounded-lg bg-[#121722] border border-slate-700/80 p-1 flex items-center justify-center shrink-0">
+                    <img
+                      src={item.product.images[0]}
+                      alt={item.product.title}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-black text-white truncate">
+                      {item.product.title}
+                    </h4>
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                      <span className="rounded bg-slate-800 px-1.5 py-0.5 border border-slate-700 font-bold text-slate-200">
+                        {item.selectedCapacity}
+                      </span>
+                      <span className="text-slate-400 font-medium">
+                        {item.product.condition}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quantity Counter (Touch Target >= 44x44px) */}
+                  <div className="flex items-center gap-1 bg-[#121722] border border-slate-700 rounded-lg p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateQuantity(item.id, -1)}
+                      className="h-8 w-8 grid place-items-center rounded text-slate-300 hover:text-white hover:bg-slate-750 active:scale-90"
+                      aria-label="تقليل الكمية"
+                    >
+                      <Minus size={13} />
+                    </button>
+                    <span className="w-5 text-center text-xs font-black text-white">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateQuantity(item.id, 1)}
+                      className="h-8 w-8 grid place-items-center rounded text-slate-300 hover:text-white hover:bg-slate-750 active:scale-90"
+                      aria-label="زيادة الكمية"
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+
+                  {/* Delete Button */}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(item.id)}
+                    className="h-8 w-8 grid place-items-center text-slate-400 hover:text-rose-400 transition-colors"
+                    aria-label="حذف العنصر"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Optional Custom Note */}
+              <div className="pt-2">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                  ملاحظات أو أسئلة إضافية للمبيعات (اختياري):
+                </label>
+                <input
+                  type="text"
+                  value={customNote}
+                  onChange={(e) => setCustomNote(e.target.value)}
+                  placeholder="مثلاً: متى يمكنني الاستلام اليوم من ردسي مول؟"
+                  className="w-full rounded-xl border border-slate-700 bg-[#0B0F17] px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+
+              {/* Trust Reminder */}
+              <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/30 p-2.5 flex items-center gap-2 text-emerald-300 text-[11px] font-bold">
+                <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+                <span>جميع الأجهزة مفحوصة مع ضمان تجربة 7 أيام وتغليف ملكي هدية</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Sticky Bottom WhatsApp Action CTA */}
+        {items.length > 0 && (
+          <div className="p-4 border-t border-slate-800 bg-[#0F131C]">
+            <button
+              type="button"
+              onClick={handleSendToWhatsApp}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#25D366] py-3.5 text-sm font-black text-white hover:bg-[#20BA59] active:scale-95 transition-all shadow-lg"
+            >
+              <MessageCircle size={20} className="fill-white" />
+              <span>إرسال الاستفسار والتسعيرة عبر الواتساب ({totalItems})</span>
+            </button>
+            <p className="mt-1.5 text-center text-[10px] text-slate-400">
+              سيتم فتح محادثة مباشرة مع مبيعات نجم عدن موبايل: {STORE_CONTACTS.phone1}
+            </p>
+          </div>
+        )}
       </div>
-      <nav className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-7 gap-y-4 px-5 pb-4 lg:px-10 md:flex" aria-label="تصنيفات المتجر">
-        <span className="hidden shrink-0 items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.5)] md:inline-flex"><SlidersHorizontal size={14} /> تصفح حسب</span>
-        {categoryOptions.map((category) => <a key={category.key} href={categoryPaths[category.key]} onClick={() => setMobileMenu(false)} className={`category-link focus-ring text-xs font-bold transition-colors ${activeCategory === category.key ? 'active' : ''}`}>{category.label}</a>)}
-        <a href="/#promise" className="category-link focus-ring text-xs font-bold">لماذا نجم عدن؟</a>
-      </nav>
-    </header>
-    {createPortal(mobileNavigation, document.body)}
     </>
   );
 }
 
-function CategoryPage({ slug }: { slug: string }) {
-  const categoryKey = categorySlugs[slug];
-  const resolvedCategory = categoryKey ?? 'all';
-  const meta = categoryMeta[resolvedCategory];
-  const [selected, setSelected] = useState<CatalogProduct | null>(null);
-  const [search, setSearch] = useState('');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-  const [availabilityOnly, setAvailabilityOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+// ---------------------------------------------------------------------
+// Component: Side Category Drawer
+// ---------------------------------------------------------------------
+function MobileSideDrawer({
+  activeCategory,
+  onSelectCategory,
+  onClose,
+  onOpenCart,
+  cartCount,
+  onOpenAdmin,
+}: {
+  activeCategory: ProductCategory;
+  onSelectCategory: (cat: ProductCategory) => void;
+  onClose: () => void;
+  onOpenCart: () => void;
+  cartCount: number;
+  onOpenAdmin?: () => void;
+}) {
+  return (
+    <>
+      <div
+        className="mobile-drawer-backdrop"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        className="mobile-drawer-content"
+        role="dialog"
+        aria-modal="true"
+        aria-label="قائمة الأقسام"
+      >
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#121722]">
+          <BrandLogo />
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-750"
+            aria-label="إغلاق القائمة"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Quick Cart Shortcut in Drawer */}
+        <div className="p-3 border-b border-slate-800/80">
+          <button
+            onClick={onOpenCart}
+            className="w-full flex items-center justify-between rounded-xl bg-[#121722] border border-slate-750 p-2.5 text-xs font-bold text-slate-200 hover:border-[#D4AF37]"
+          >
+            <span className="flex items-center gap-2">
+              <ShoppingCart size={16} className="text-[#D4AF37]" />
+              <span>سلة الاستفسار والتسعيرة</span>
+            </span>
+            <span className="rounded-full bg-[#D4AF37] text-[#0A0D14] font-black px-2 py-0.5 text-[10px] shadow-sm">
+              {cartCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Categories list */}
+        <div className="flex-1 overflow-y-auto py-2">
+          <div className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase">
+            أقسام المتجر
+          </div>
+          {CATEGORY_ITEMS.map((cat) => {
+            const isActive = activeCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                onClick={() => onSelectCategory(cat.key)}
+                className={`drawer-category-item w-full ${isActive ? 'active' : ''}`}
+              >
+                <span>{cat.label}</span>
+                <ChevronLeft size={16} className={isActive ? 'text-[#D4AF37]' : 'text-slate-500'} />
+              </button>
+            );
+          })}
+
+          <div className="px-4 pt-4 pb-1.5 text-[10px] font-bold text-slate-400 uppercase">
+            معلومات الصالة والضمان
+          </div>
+          <div className="px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-200">
+            <span className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-[#D4AF37]" /> فحص شامل قبل التسليم
+            </span>
+            <Check size={14} className="text-emerald-400" />
+          </div>
+          <div className="px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-200">
+            <span className="flex items-center gap-2">
+              <RotateCcw size={16} className="text-[#D4AF37]" /> ضمان تجربة 7 أيام
+            </span>
+            <Check size={14} className="text-emerald-400" />
+          </div>
+        </div>
+
+        {/* Drawer Bottom Actions */}
+        <div className="p-4 border-t border-slate-800 bg-[#0F131C] space-y-2">
+          <a
+            href={`https://wa.me/${STORE_CONTACTS.whatsapp1}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن الأجهزة المتوفرة في نجم عدن موبايل.')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] py-3 text-xs font-black text-white shadow hover:bg-[#20BA59] transition-all"
+          >
+            <MessageCircle size={16} /> واتساب المبيعات: {STORE_CONTACTS.phone1}
+          </a>
+          <a
+            href={`tel:${STORE_CONTACTS.phone2}`}
+            className="flex items-center justify-center gap-2 w-full rounded-xl border border-slate-700 bg-slate-800/80 py-2 text-xs font-bold text-slate-200 hover:border-[#D4AF37] hover:text-white transition-colors"
+          >
+            <Phone size={14} className="text-[#D4AF37]" /> اتصال بالفرع: {STORE_CONTACTS.phone2}
+          </a>
+          {onOpenAdmin && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenAdmin();
+              }}
+              className="flex items-center justify-center gap-2 w-full rounded-xl border border-slate-800 bg-[#0B0F17] py-2 text-xs font-bold text-slate-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/50 transition-colors cursor-pointer"
+            >
+              <Lock size={13} className="text-[#D4AF37]" />
+              <span>لوحة إدارة المخزون (PIN)</span>
+            </button>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Component: Detailed Multi-Angle Product Modal
+// ---------------------------------------------------------------------
+function ProductDetailsModal({
+  product,
+  onClose,
+  onAddToCart,
+  onDirectWhatsApp,
+}: {
+  product: CatalogProduct;
+  onClose: () => void;
+  onAddToCart: (prod: CatalogProduct, capacity: string) => void;
+  onDirectWhatsApp: (prod: CatalogProduct, capacity: string) => void;
+}) {
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+  const [selectedCap, setSelectedCap] = useState(product.defaultCapacity);
+  const [zoomed, setZoomed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   useEffect(() => {
-    if (meta) {
-      document.title = `${meta.label} — نجم عدن موبايل`;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [meta]);
+    setImgLoaded(false);
+  }, [activeImgIndex]);
 
-  const products = useMemo(() => {
-    const visible = filterCatalog(resolvedCategory, search).filter((product) => !availabilityOnly || product.availability.includes('متوفر'));
-    return [...visible].sort((a, b) => sortBy === 'newest' ? Number(Boolean(b.isNew)) - Number(Boolean(a.isNew)) : Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
-  }, [availabilityOnly, resolvedCategory, search, sortBy]);
-
-  if (!meta) return <NotFound />;
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
 
   return (
-    <div className="site-shell grain min-h-[100dvh]" dir="rtl">
-      <div className="store-topline bg-[hsl(var(--primary))] px-5 py-2 text-center text-[11px] font-semibold text-[hsl(var(--primary-foreground))]"><span>فحص شامل قبل البيع</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تجربة 7 أيام</span><span className="mx-3 text-[hsl(var(--secondary))]">•</span><span>تواصل مباشر عبر واتساب</span></div>
-      <StoreHeader activeCategory={resolvedCategory} search={search} onSearchChange={setSearch} onOpenWhatsApp={openWhatsApp} />
-      <main id="products" className="category-page mx-auto max-w-7xl px-5 pb-16 pt-7 lg:px-10 lg:pb-24">
-        <nav className="breadcrumb mb-9 flex items-center gap-2 text-xs font-bold" aria-label="مسار التنقل"><a href="/" className="transition-colors hover:text-[hsl(var(--secondary-foreground))]">الرئيسية</a><ChevronLeft size={14} className="text-[hsl(var(--foreground)/.35)]" /><span className="text-[hsl(var(--foreground)/.55)]">{meta.label}</span></nav>
-        <div className="mb-8 flex flex-col gap-5 border-b border-[hsl(var(--border))] pb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div><p className="eyebrow mb-3">كتالوج نجم عدن</p><h1 className="text-3xl font-black tracking-tight sm:text-5xl">{meta.label}</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[hsl(var(--foreground)/.62)]">{meta.description}</p></div>
-          <a href="/" className="focus-ring inline-flex shrink-0 items-center gap-2 border border-[hsl(var(--border))] px-4 py-3 text-xs font-bold transition-colors hover:border-[hsl(var(--secondary))]">العودة للرئيسية <ArrowLeft size={15} /></a>
-        </div>
-        <div className="category-actions relative z-10 mb-7 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <button onClick={() => { setFilterOpen((open) => !open); setSortOpen(false); }} className={`category-action-button focus-ring ${filterOpen || availabilityOnly ? 'active' : ''}`} aria-expanded={filterOpen}><SlidersHorizontal size={15} /> تصفية</button>
-              {filterOpen && <div className="category-popover right-0 mt-2 min-w-52"><p className="mb-3 text-xs font-black">عرض المنتجات</p><button onClick={() => setAvailabilityOnly(false)} className={`category-option ${!availabilityOnly ? 'active' : ''}`}>كل المنتجات <Check size={14} /></button><button onClick={() => setAvailabilityOnly(true)} className={`category-option ${availabilityOnly ? 'active' : ''}`}>متوفر الآن <Check size={14} /></button></div>}
+    <div
+      className="fixed inset-0 z-[1000] grid place-items-center bg-black/85 p-3 sm:p-6 backdrop-blur-md overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="relative w-full max-w-2xl max-h-[92dvh] overflow-y-auto rounded-2xl bg-[#0F131C] text-slate-100 shadow-2xl border border-slate-800">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 left-3 z-20 grid h-9 w-9 place-items-center rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 shadow hover:text-white hover:bg-slate-700 transition-colors"
+          aria-label="إغلاق النافذة"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="grid sm:grid-cols-2">
+          {/* Photos View */}
+          <div className="bg-[#0B0F17] p-4 flex flex-col items-center justify-between border-b sm:border-b-0 sm:border-l border-slate-800">
+            <div
+              onClick={() => setZoomed(!zoomed)}
+              className="relative w-full aspect-square flex items-center justify-center overflow-hidden rounded-xl bg-[#121722] border border-slate-750 cursor-zoom-in"
+            >
+              {!imgLoaded && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#121722]">
+                  <div className="animate-logo-breath opacity-40">
+                    <img
+                      src="/assets/logo.png"
+                      alt="تحميل"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo.png';
+                      }}
+                      className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(212,175,55,0.35)]"
+                    />
+                  </div>
+                  <div className="shimmer-sweep" />
+                </div>
+              )}
+              <img
+                src={product.images[activeImgIndex] || product.images[0]}
+                alt={product.title}
+                onLoad={() => setImgLoaded(true)}
+                className={`max-h-full max-w-full object-contain transition-all duration-300 ${
+                  zoomed ? 'scale-150 cursor-zoom-out' : ''
+                } ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+              />
+              {imgLoaded && (
+                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-[#0A0D14]/80 border border-slate-700 px-2 py-0.5 text-[9px] text-slate-300">
+                  <ZoomIn size={11} className="text-[#D4AF37]" /> انقر للتكبير
+                </span>
+              )}
             </div>
-            <div className="relative">
-              <button onClick={() => { setSortOpen((open) => !open); setFilterOpen(false); }} className={`category-action-button focus-ring ${sortOpen ? 'active' : ''}`} aria-expanded={sortOpen}>ترتيب حسب: {sortBy === 'newest' ? 'الأحدث' : 'الأكثر طلباً'} <ChevronDown size={15} /></button>
-              {sortOpen && <div className="category-popover right-0 mt-2 min-w-52"><button onClick={() => { setSortBy('newest'); setSortOpen(false); }} className={`category-option ${sortBy === 'newest' ? 'active' : ''}`}>الأحدث <Check size={14} /></button><button onClick={() => { setSortBy('popular'); setSortOpen(false); }} className={`category-option ${sortBy === 'popular' ? 'active' : ''}`}>الأكثر طلباً <Check size={14} /></button></div>}
+
+            {/* Thumbnails */}
+            {product.images.length > 1 && (
+              <div className="mt-3 flex gap-2 overflow-x-auto w-full justify-center pb-1">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setActiveImgIndex(idx);
+                      setZoomed(false);
+                    }}
+                    className={`h-12 w-12 rounded-lg overflow-hidden border-2 p-1 bg-[#121722] transition-all ${
+                      idx === activeImgIndex
+                        ? 'border-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.4)]'
+                        : 'border-slate-800 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="" className="h-full w-full object-contain" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Details & Actions */}
+          <div className="p-4 sm:p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="rounded-md bg-[#D4AF37] text-[#0A0D14] px-2 py-0.5 text-[10px] font-black">
+                  {product.condition}
+                </span>
+                {product.batteryHealth && (
+                  <span className="rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 px-2 py-0.5 text-[10px] font-bold">
+                    ⚡ صحة البطارية: {product.batteryHealth}
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-base sm:text-lg font-black text-white leading-snug">
+                {product.title}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-400 font-medium">{product.subtitle}</p>
+
+              {/* Price */}
+              <div className="mt-2 text-sm font-black text-[#D4AF37]">
+                {product.priceText}
+              </div>
+
+              {/* Capacity Selector */}
+              {product.capacities && (
+                <div className="mt-3 pt-3 border-t border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-300 block mb-1.5">
+                    اختر سعة التخزين:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {product.capacities.map((cap) => (
+                      <button
+                        key={cap}
+                        type="button"
+                        onClick={() => setSelectedCap(cap)}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                          selectedCap === cap
+                            ? 'bg-gradient-to-r from-[#D4AF37] to-[#E5B869] text-[#0A0D14] font-black shadow-sm'
+                            : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        {cap}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Specs */}
+              <div className="mt-3 space-y-1.5 text-xs">
+                {product.specs.map((s, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-slate-300">
+                    <Check size={13} className="text-[#D4AF37] shrink-0" />
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-5 pt-3 border-t border-slate-800 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onAddToCart(product, selectedCap);
+                  onClose();
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A2232] border border-slate-700 py-3 text-xs font-black text-white hover:border-[#D4AF37] hover:bg-[#20293D] active:scale-95 transition-all shadow-md"
+              >
+                <Plus size={16} className="text-[#D4AF37]" /> إضافة إلى سلة الاستفسار والتسعيرة
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onDirectWhatsApp(product, selectedCap)}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-xs font-black text-white hover:bg-[#20BA59] active:scale-95 transition-all shadow-md"
+              >
+                <MessageCircle size={16} className="fill-white" /> استفسار مباشر عن هذا الجهاز بالواتساب
+              </button>
             </div>
           </div>
-          <span className="inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--foreground)/.55)]"><Tag size={14} className="text-[hsl(var(--secondary-foreground))]" /> {products.length} منتجات</span>
         </div>
-        <ProductShelf view="compact" products={products} onOpen={setSelected} onWhatsApp={openWhatsApp} />
-      </main>
-      <footer className="border-t border-[hsl(var(--foreground)/.1)]"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-7 text-xs text-[hsl(var(--foreground)/.58)] lg:px-10"><a href="/" className="font-black text-[hsl(var(--foreground))]">نجم عدن موبايل</a><span>77887578 / 77883537</span></div></footer>
-      <button onClick={() => openWhatsApp()} className="wa-float focus-ring fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#1d6844] px-5 py-3 text-sm font-bold text-white"><MessageCircle size={18} /> واتساب</button>
-      {selected && <ProductModal product={selected} onClose={() => setSelected(null)} onWhatsApp={() => openWhatsApp(selected.title)} />}
+      </div>
     </div>
   );
 }
 
-function ProductShelf({ eyebrow, title, products, view, onOpen, onWhatsApp }: { eyebrow?: string; title?: string; products: CatalogProduct[]; view: 'large' | 'compact'; onOpen: (product: CatalogProduct) => void; onWhatsApp: (productName: string) => void }) {
-  if (!products.length) {
-    return <div className="border border-dashed border-[hsl(var(--border))] px-6 py-16 text-center"><Search className="mx-auto mb-4 text-[hsl(var(--foreground)/.4)]" size={26} /><h3 className="font-bold">لم نعثر على منتجات مطابقة</h3><p className="mt-2 text-xs text-[hsl(var(--foreground)/.55)]">جرّب كلمة أخرى أو اختر تصنيفاً مختلفاً.</p></div>;
+// ---------------------------------------------------------------------
+// App Routing Shell & Admin Route
+// ---------------------------------------------------------------------
+function AdminRouteWrapper() {
+  const { settings } = useCatalog();
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('najm_aden_admin_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  if (!isAdminAuthenticated) {
+    return (
+      <AdminPinGate
+        expectedPin={settings.adminPin || '2026'}
+        onSuccess={() => {
+          setIsAdminAuthenticated(true);
+          try {
+            sessionStorage.setItem('najm_aden_admin_auth', 'true');
+          } catch {}
+        }}
+        onExit={() => {
+          window.location.href = '/';
+        }}
+      />
+    );
   }
-   return <div>{eyebrow && title && <div className="mb-5 flex items-end justify-between gap-4"><div><p className="eyebrow mb-2">{eyebrow}</p><h3 className="text-2xl font-extrabold tracking-tight">{title}</h3></div><span className="hidden text-xs text-[hsl(var(--foreground)/.5)] sm:inline-flex">{products.length} منتجات</span></div>}<div className={view === 'large' ? 'grid gap-6 lg:grid-cols-2' : 'grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4'}>{products.map((product, index) => <ProductCard key={`${product.id}-${index}`} product={product} index={index} view={view} onOpen={() => onOpen(product)} onWhatsApp={() => onWhatsApp(product.title)} />)}</div></div>;
-}
 
-function ProductCard({ product, index, view, onOpen, onWhatsApp }: { product: CatalogProduct; index: number; view: 'large' | 'compact'; onOpen: () => void; onWhatsApp: () => void }) {
-  const compact = view === 'compact';
-  return <article className={`product-card rise flex flex-col border border-[hsl(var(--card-border))] bg-[hsl(var(--card))] ${compact ? 'product-card-compact' : 'product-card-large'}`} style={{ animationDelay: `${index * 90}ms` }}>
-    <button onClick={onOpen} className="focus-ring block w-full text-right">
-      <div className={`relative overflow-hidden bg-[hsl(var(--muted))] ${compact ? 'p-2.5 sm:p-4' : 'p-4 sm:p-6'}`}><img src={product.images[0]} alt={`${product.title} ${product.subtitle}`} className={`product-image w-full object-cover mix-blend-multiply ${compact ? 'aspect-square' : 'aspect-[1.2]'}`} />{product.badge && <span className={`absolute right-4 top-4 bg-[hsl(var(--primary))] px-3 py-1 text-[10px] font-bold text-[hsl(var(--primary-foreground))] ${compact ? 'max-w-[calc(100%-2rem)] truncate' : ''}`}>{product.badge}</span>}<span className={`absolute grid place-items-center rounded-full bg-[hsl(var(--background)/.86)] text-[hsl(var(--foreground))] ${compact ? 'bottom-3 left-3 h-8 w-8' : 'bottom-5 left-5 h-10 w-10'}`}><Eye size={compact ? 14 : 17} /></span></div>
-      <div className={compact ? 'px-3 pt-3 sm:px-5 sm:pt-5' : 'px-5 pt-5'}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className={`truncate font-extrabold ${compact ? 'text-sm sm:text-lg' : 'text-xl'}`}>{product.title}</h3><p className="mt-1 truncate text-xs text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p></div><span className="mt-1 h-3 w-3 shrink-0 rounded-full border border-[hsl(var(--foreground)/.2)]" style={{ background: product.accent }} /></div></div>
-    </button>
-    <div className={`flex flex-1 flex-col ${compact ? 'px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4' : 'px-5 pb-6 pt-4'}`}><div className={`flex flex-wrap gap-2 ${compact ? 'mb-3 max-h-8 overflow-hidden' : 'mb-4'}`}>{product.specs.map((spec) => <span key={spec} className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--foreground)/.61)]">{spec}</span>)}</div><div className={`flex items-center justify-between gap-2 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)] ${compact ? 'mb-3' : 'mb-5'}`}><span className="inline-flex min-w-0 items-center gap-1 truncate"><Check size={12} className="shrink-0 text-[hsl(var(--secondary-foreground))]" /> {product.availability}</span><span className="shrink-0">{product.category}</span></div><div className="mb-4 flex items-center gap-1 text-[10px] font-bold text-[hsl(var(--secondary-foreground))]"><Tag size={12} /> السعر عند الاستفسار</div>{!compact && <div className="mb-5 flex flex-wrap gap-3 border-y border-[hsl(var(--border))] py-3 text-[10px] font-semibold text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><ShieldCheck size={13} className="text-[hsl(var(--secondary-foreground))]" /> فحص شامل</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div>}<div className="mt-auto grid grid-cols-[1fr_auto] gap-2"><button onClick={onWhatsApp} className={`focus-ring inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 ${compact ? 'px-2 py-2.5 text-[10px] sm:px-3 sm:text-xs' : 'px-3 py-3 text-xs'}`}><MessageCircle size={compact ? 14 : 15} /> <span className={compact ? 'hidden sm:inline' : ''}>اسأل عبر واتساب</span></button><button onClick={onOpen} className={`focus-ring grid place-items-center border border-[hsl(var(--border))] ${compact ? 'w-9' : 'px-3'}`} aria-label={`تفاصيل ${product.title}`}><ArrowLeft size={16} /></button></div></div>
-  </article>;
-}
-
-function Promise({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
-  return <div className="bg-[hsl(var(--primary))] p-7"><div className="mb-8 text-[hsl(var(--secondary))]">{icon}</div><h3 className="font-bold">{title}</h3><p className="mt-3 text-xs leading-6 text-[hsl(var(--primary-foreground)/.57)]">{text}</p></div>;
-}
-
-function ProductModal({ product, onClose, onWhatsApp }: { product: CatalogProduct; onClose: () => void; onWhatsApp: () => void }) {
-  const [active, setActive] = useState(0);
-  const [zoom, setZoom] = useState(false);
-  useEffect(() => {
-    setActive(0);
-    setZoom(false);
-  }, [product.id]);
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-      if (event.key === 'ArrowRight') setActive((current) => (current - 1 + product.images.length) % product.images.length);
-      if (event.key === 'ArrowLeft') setActive((current) => (current + 1) % product.images.length);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', handleKeyDown); };
-  }, [onClose, product.images.length]);
-  const next = () => setActive((current) => (current + 1) % product.images.length);
-  const previous = () => setActive((current) => (current - 1 + product.images.length) % product.images.length);
-  return <div className="modal-backdrop fixed inset-0 z-50 grid place-items-center bg-[hsl(220 24% 13%/.76)] p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label={`تفاصيل ${product.title}`} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-     <div className="modal-panel relative max-h-[94dvh] w-full max-w-5xl min-w-0 overflow-x-hidden overflow-y-auto bg-[hsl(var(--background))] shadow-[var(--shadow-md)]">
-      <button onClick={onClose} className="focus-ring absolute left-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-[hsl(var(--background)/.9)]" aria-label="إغلاق"><X size={19} /></button>
-      <div className="grid lg:grid-cols-[1.05fr_.95fr]">
-          <div className="min-w-0 bg-[hsl(var(--muted))] p-4 sm:p-8"><div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[hsl(var(--card))]"><img key={`${product.id}-${active}`} src={product.images[active]} alt={`${product.title} زاوية ${active + 1}`} onClick={() => setZoom(!zoom)} className={`modal-image h-full w-full object-cover mix-blend-multiply ${zoom ? 'zoomed' : ''}`} /><span className="pointer-events-none absolute bottom-4 right-4 flex items-center gap-2 bg-[hsl(var(--background)/.82)] px-3 py-2 text-[10px]"><ZoomIn size={13} /> اضغط للتكبير</span></div><div className="mt-4 flex flex-wrap gap-3 pb-1">{product.images.map((image, index) => <button key={`${image}-${index}`} onClick={() => { setActive(index); setZoom(false); }} className={`focus-ring h-16 w-16 shrink-0 overflow-hidden border-2 bg-[hsl(var(--card))] ${active === index ? 'border-[hsl(var(--secondary))]' : 'border-transparent'}`} aria-label={`عرض زاوية ${index + 1}`}><img src={image} alt="" className="h-full w-full object-cover mix-blend-multiply" /></button>)}</div><div className="mt-4 flex justify-between gap-3"><button onClick={previous} className="focus-ring inline-flex items-center gap-2 text-xs font-bold" aria-label="الصورة السابقة"><ChevronRight size={16} /> السابقة</button><span className="eyebrow shrink-0">{String(active + 1).padStart(2, '0')} / {String(product.images.length).padStart(2, '0')}</span><button onClick={next} className="focus-ring inline-flex items-center gap-2 text-xs font-bold" aria-label="الصورة التالية">التالية <ChevronLeft size={16} /></button></div></div>
-         <div className="min-w-0 flex flex-col p-6 sm:p-10"><p className="eyebrow mb-5">تفاصيل المنتج</p><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{product.title}</h2><p className="mt-2 text-sm text-[hsl(var(--foreground)/.58)]">{product.subtitle}</p><div className="my-8 h-px bg-[hsl(var(--border))]" /><div className="space-y-5"><div><span className="eyebrow">المواصفات</span><div className="mt-3 flex flex-wrap gap-2">{product.specs.map((spec) => <span key={spec} className="bg-[hsl(var(--muted))] px-3 py-2 text-xs font-semibold">{spec}</span>)}</div></div><div><span className="eyebrow">اللون</span><p className="mt-2 text-sm">{product.color}</p></div><div><span className="eyebrow">التوفر</span><p className="mt-2 text-sm">{product.availability}</p></div></div><div className="mt-auto pt-10"><button onClick={onWhatsApp} className="focus-ring flex w-full items-center justify-center gap-3 bg-[hsl(var(--primary))] px-5 py-4 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-1"><MessageCircle size={18} /> استفسار أو اطلب عبر الواتساب</button><p className="mt-4 text-center text-[11px] leading-6 text-[hsl(var(--foreground)/.52)]">يتوفر التواصل على الرقمين<br /><b className="text-[hsl(var(--foreground)/.78)]">77887578</b> و <b className="text-[hsl(var(--foreground)/.78)]">77883537</b></p><div className="mt-7 flex flex-wrap items-center justify-center gap-5 border-t border-[hsl(var(--border))] pt-6 text-[10px] text-[hsl(var(--foreground)/.58)]"><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> جودة مضمونة</span><span className="inline-flex items-center gap-1"><Check size={13} className="text-[hsl(var(--secondary-foreground))]" /> تجربة 7 أيام</span></div></div></div>
-      </div>
-    </div>
-  </div>;
+  return (
+    <AdminDashboard
+      onExitToStore={() => {
+        window.location.href = '/';
+      }}
+      onLockSession={() => {
+        setIsAdminAuthenticated(false);
+        try {
+          sessionStorage.removeItem('najm_aden_admin_auth');
+        } catch {}
+      }}
+    />
+  );
 }
 
 function Router() {
-  return <RoutedErrorBoundary><Switch><Route path="/" component={Home} /><Route path="/category/:slug">{({ slug }) => <CategoryPage slug={slug} />}</Route><Route component={NotFound} /></Switch></RoutedErrorBoundary>;
+  return (
+    <Switch>
+      <Route path="/admin" component={AdminRouteWrapper} />
+      <Route path="/" component={Home} />
+      <Route component={NotFound} />
+    </Switch>
+  );
 }
 
-function RoutedErrorBoundary({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <CatalogProvider>
+        <TooltipProvider>
+          <WouterRouter>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </CatalogProvider>
+    </QueryClientProvider>
+  );
 }
-
-function App() {
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
-}
-
-export default App;

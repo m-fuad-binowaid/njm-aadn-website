@@ -1,0 +1,228 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 850" width="100%" height="100%">
+  <defs>
+    <!-- Gradients for Burgundy iPhone Body -->
+    <linearGradient id="burgundyChassis" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#80142B" />
+      <stop offset="25%" stop-color="#590D1E" />
+      <stop offset="60%" stop-color="#3D0814" />
+      <stop offset="100%" stop-color="#24040B" />
+    </linearGradient>
+
+    <!-- Metallic Edge Highlight (Titanium Burgundy Sheen) -->
+    <linearGradient id="titaniumSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#BA2D4E" stop-opacity="0.9" />
+      <stop offset="30%" stop-color="#6E1126" stop-opacity="0.8" />
+      <stop offset="70%" stop-color="#3D0814" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#BA2D4E" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Glass Camera Plate Gradient -->
+    <linearGradient id="cameraPlateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#631023" />
+      <stop offset="50%" stop-color="#480A18" />
+      <stop offset="100%" stop-color="#28030B" />
+    </linearGradient>
+
+    <!-- Lens Glass Reflection -->
+    <radialGradient id="lensGlass" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="45%" stop-color="#0F172A" />
+      <stop offset="85%" stop-color="#020617" />
+      <stop offset="100%" stop-color="#3B0713" />
+    </radialGradient>
+
+    <radialGradient id="lensRing" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#D4496B" />
+      <stop offset="40%" stop-color="#7B142B" />
+      <stop offset="80%" stop-color="#400814" />
+      <stop offset="100%" stop-color="#A82845" />
+    </radialGradient>
+
+    <!-- Wallpaper Radiant Mesh Glow (from Attachment 2) -->
+    <radialGradient id="wallpaperGlow1" cx="65%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#C7254E" stop-opacity="0.95" />
+      <stop offset="40%" stop-color="#7A0E28" stop-opacity="0.8" />
+      <stop offset="80%" stop-color="#33040E" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#140105" />
+    </radialGradient>
+
+    <radialGradient id="wallpaperGlow2" cx="30%" cy="75%" r="50%">
+      <stop offset="0%" stop-color="#E13B66" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#80102B" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#1A0208" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Glowing Cyan/Teal Ray (exact feature from Attachment 2 screen) -->
+    <linearGradient id="cyanArc" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0" />
+      <stop offset="35%" stop-color="#22D3EE" stop-opacity="0.8" />
+      <stop offset="70%" stop-color="#38BDF8" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Ambient Shadow Behind Mockup -->
+    <filter id="phoneShadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="25" stdDeviation="30" flood-color="#000000" flood-opacity="0.8" />
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#7A0E28" flood-opacity="0.35" />
+    </filter>
+
+    <filter id="laserGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="glow" />
+      <feComposite in="SourceGraphic" in2="glow" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- ======================================================== -->
+  <!-- 1. LEFT BACK PHONE (Showing Rear Camera Module & Apple Logo) -->
+  <!-- ======================================================== -->
+  <g transform="translate(130, 90) rotate(-7)" filter="url(#phoneShadow)">
+    <!-- Outer Chassis / Frame with Burgundy Titanium Edge -->
+    <rect x="0" y="0" width="270" height="560" rx="46" fill="url(#titaniumSheen)" stroke="#BA2D4E" stroke-width="1.8" />
+    
+    <!-- Matte Rear Glass Surface -->
+    <rect x="5" y="5" width="260" height="550" rx="42" fill="url(#burgundyChassis)" />
+
+    <!-- Subtle Matte Glass Texture & Sheen -->
+    <path d="M 5 50 Q 140 100 265 60 L 265 5 Q 140 40 5 5 Z" fill="#FFFFFF" opacity="0.06" />
+
+    <!-- Camera Island Module (Upper Left) -->
+    <g transform="translate(20, 22)">
+      <!-- Island Base with soft pill-square radius and beveled glass lip -->
+      <rect x="0" y="0" width="135" height="142" rx="30" fill="url(#cameraPlateGrad)" stroke="#8A1B33" stroke-width="1.5" />
+      
+      <!-- Lens 1 (Top Left) -->
+      <g transform="translate(36, 38)">
+        <circle cx="0" cy="0" r="28" fill="url(#lensRing)" stroke="#A82845" stroke-width="1.2" />
+        <circle cx="0" cy="0" r="23" fill="url(#lensGlass)" />
+        <circle cx="-5" cy="-5" r="9" fill="#38BDF8" opacity="0.25" />
+        <circle cx="-4" cy="-4" r="5" fill="#FFFFFF" opacity="0.6" />
+        <circle cx="5" cy="5" r="4" fill="#E11D48" opacity="0.2" />
+      </g>
+
+      <!-- Lens 2 (Bottom Left) -->
+      <g transform="translate(36, 104)">
+        <circle cx="0" cy="0" r="28" fill="url(#lensRing)" stroke="#A82845" stroke-width="1.2" />
+        <circle cx="0" cy="0" r="23" fill="url(#lensGlass)" />
+        <circle cx="-5" cy="-5" r="9" fill="#38BDF8" opacity="0.25" />
+        <circle cx="-4" cy="-4" r="5" fill="#FFFFFF" opacity="0.6" />
+        <circle cx="5" cy="5" r="4" fill="#E11D48" opacity="0.2" />
+      </g>
+
+      <!-- Lens 3 (Right Middle) -->
+      <g transform="translate(99, 71)">
+        <circle cx="0" cy="0" r="28" fill="url(#lensRing)" stroke="#A82845" stroke-width="1.2" />
+        <circle cx="0" cy="0" r="23" fill="url(#lensGlass)" />
+        <circle cx="-5" cy="-5" r="9" fill="#38BDF8" opacity="0.25" />
+        <circle cx="-4" cy="-4" r="5" fill="#FFFFFF" opacity="0.6" />
+        <circle cx="5" cy="5" r="4" fill="#E11D48" opacity="0.2" />
+      </g>
+
+      <!-- True Tone Flash (Top Right) -->
+      <circle cx="98" cy="28" r="9" fill="#FDE047" opacity="0.8" stroke="#713F12" stroke-width="1" />
+      <circle cx="98" cy="28" r="4" fill="#FFFFFF" opacity="0.9" />
+
+      <!-- LiDAR Sensor (Bottom Right) -->
+      <circle cx="98" cy="116" r="7" fill="#0F172A" stroke="#334155" stroke-width="1" />
+    </g>
+
+    <!-- Metallic Burgundy Apple Logo in Center -->
+    <g transform="translate(135, 290) scale(0.65)">
+      <!-- Apple Leaf -->
+      <path d="M 12 -42 C 20 -55 35 -60 40 -60 C 40 -50 32 -38 24 -32 C 16 -26 4 -28 12 -42 Z" fill="#2E040D" />
+      <!-- Apple Body with Bite -->
+      <path d="M 0 -22 C -15 -22 -28 -32 -42 -32 C -65 -32 -82 -10 -82 25 C -82 62 -55 105 -35 105 C -24 105 -18 97 -2 97 C 14 97 20 105 32 105 C 52 105 78 64 78 28 C 60 25 50 10 50 -8 C 50 -24 62 -36 75 -40 C 62 -55 42 -58 30 -58 C 15 -58 5 -48 0 -48 Z" 
+            fill="#2E040D" opacity="0.9" />
+      <!-- Specular Highlight on Apple -->
+      <path d="M -30 -10 C -45 10 -45 50 -25 80" stroke="#7A0E28" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.4" />
+    </g>
+
+    <!-- Volume Buttons on Side Edge -->
+    <rect x="-4" y="115" width="4" height="34" rx="2" fill="#BA2D4E" />
+    <rect x="-4" y="165" width="4" height="52" rx="2" fill="#BA2D4E" />
+    <rect x="-4" y="230" width="4" height="52" rx="2" fill="#BA2D4E" />
+  </g>
+
+  <!-- ======================================================== -->
+  <!-- 2. RIGHT FRONT DISPLAY PHONE (Hero Screen in Attachment 2) -->
+  <!-- ======================================================== -->
+  <g transform="translate(265, 120) rotate(5)" filter="url(#phoneShadow)">
+    <!-- Outer Titanium Chiseled Rim -->
+    <rect x="0" y="0" width="280" height="575" rx="48" fill="url(#titaniumSheen)" stroke="#E11D48" stroke-width="1.8" />
+    
+    <!-- Ultra-Thin Uniform Display Bezel -->
+    <rect x="5.5" y="5.5" width="269" height="564" rx="44" fill="#030712" />
+
+    <!-- OLED Display Surface with Attachment 2 Artwork -->
+    <g clip-path="url(#screenClip)">
+      <clipPath id="screenClip">
+        <rect x="7" y="7" width="266" height="561" rx="42" />
+      </clipPath>
+
+      <!-- Deep Burgundy Gradient Backdrop -->
+      <rect x="7" y="7" width="266" height="561" fill="#170207" />
+      <circle cx="180" cy="180" r="160" fill="url(#wallpaperGlow1)" />
+      <circle cx="80" cy="420" r="170" fill="url(#wallpaperGlow2)" />
+
+      <!-- Wallpaper Glowing Curved Fluid Ribbons (Matching Attachment 2) -->
+      <path d="M -20 180 Q 140 120 290 230 Q 180 340 -20 280 Z" fill="#9F1239" opacity="0.45" />
+      <path d="M 0 300 Q 160 250 280 390 Q 130 460 -10 390 Z" fill="#BE123C" opacity="0.5" />
+      <path d="M 20 240 Q 140 190 260 290" stroke="#F43F5E" stroke-width="2.5" fill="none" opacity="0.75" />
+      <path d="M 10 330 Q 150 270 270 410" stroke="#FB7185" stroke-width="2" fill="none" opacity="0.65" />
+
+      <!-- Cyan-Blue Curved Electric Light Streak at Bottom (Key feature in Attachment 2!) -->
+      <path d="M -10 435 Q 110 455 285 365" 
+            stroke="url(#cyanArc)" 
+            stroke-width="5" 
+            fill="none" 
+            filter="url(#laserGlow)" />
+      <path d="M -10 435 Q 110 455 285 365" 
+            stroke="#E0F2FE" 
+            stroke-width="1.8" 
+            fill="none" 
+            opacity="0.95" />
+
+      <!-- Centered Display Information (Matching Attachment 2) -->
+      <g transform="translate(140, 240)" text-anchor="middle">
+        <!-- White Apple Icon -->
+        <g transform="translate(0, -25) scale(0.38)">
+          <!-- Leaf -->
+          <path d="M 7 -35 C 14 -46 27 -50 31 -50 C 31 -42 25 -32 18 -27 C 12 -22 3 -24 7 -35 Z" fill="#FFFFFF" />
+          <!-- Apple Body -->
+          <path d="M 0 -18 C -12 -18 -22 -26 -33 -26 C -52 -26 -65 -8 -65 20 C -65 50 -44 84 -28 84 C -19 84 -14 78 -2 78 C 11 78 16 84 26 84 C 42 84 62 51 62 22 C 48 20 40 8 40 -6 C 40 -19 50 -29 60 -32 C 50 -44 34 -46 24 -46 C 12 -46 4 -38 0 -38 Z" fill="#FFFFFF" />
+        </g>
+
+        <!-- Typography from Attachment 2 -->
+        <text x="0" y="25" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="21" font-weight="800" letter-spacing="-0.5">
+          iPhone 18
+        </text>
+        <text x="0" y="47" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="600" letter-spacing="-0.3">
+          Pro Max
+        </text>
+
+        <!-- Subtitle: New Color Burgundy -->
+        <text x="0" y="72" fill="#E2E8F0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="500" opacity="0.9">
+          New Color
+        </text>
+        
+        <!-- Burgundy Dot Indicator + "Burgundy" label -->
+        <g transform="translate(0, 86)">
+          <circle cx="-32" cy="-3.5" r="4.5" fill="#BE123C" stroke="#FFFFFF" stroke-width="1.2" />
+          <text x="6" y="0" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700">
+            Burgundy
+          </text>
+        </g>
+      </g>
+
+      <!-- Dynamic Island Pill at Top -->
+      <rect x="85" y="14" width="96" height="24" rx="12" fill="#000000" />
+      <circle cx="160" cy="26" r="4.5" fill="#0C1322" stroke="#1E293B" stroke-width="0.8" />
+      <circle cx="108" cy="26" r="3" fill="#06090F" />
+
+      <!-- Subtle Diagonal Screen Reflection Sheen -->
+      <path d="M 7 7 L 160 7 L 7 320 Z" fill="#FFFFFF" opacity="0.04" />
+    </g>
+
+    <!-- Side Button (Right Edge) -->
+    <rect x="279" y="160" width="4" height="64" rx="2" fill="#BA2D4E" />
+  </g>
+</svg>
