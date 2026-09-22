@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -10,13 +11,24 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH || '/';
+const basePath = process.env.BASE_PATH || '/njm-aadn-website/';
 
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
+    {
+      name: 'github-pages-spa-fallback',
+      closeBundle() {
+        const distDir = path.resolve(import.meta.dirname, '../../dist');
+        const indexPath = path.join(distDir, 'index.html');
+        const notFoundPath = path.join(distDir, '404.html');
+        if (fs.existsSync(indexPath)) {
+          fs.copyFileSync(indexPath, notFoundPath);
+        }
+      },
+    },
   ],
   resolve: {
     alias: {

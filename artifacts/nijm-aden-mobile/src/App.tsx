@@ -146,7 +146,7 @@ function Home() {
   const [viewMode, setViewMode] = useState<'store' | 'admin'>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('view') === 'admin' || window.location.pathname.startsWith('/admin')) {
+      if (params.get('view') === 'admin' || window.location.pathname.includes('/admin')) {
         return 'admin';
       }
     }
@@ -157,7 +157,7 @@ function Home() {
   useEffect(() => {
     const handleUrlChange = () => {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('view') === 'admin' || window.location.pathname.startsWith('/admin')) {
+      if (params.get('view') === 'admin' || window.location.pathname.includes('/admin')) {
         setViewMode('admin');
       } else {
         setViewMode('store');
@@ -346,7 +346,8 @@ function Home() {
             setViewMode('store');
             const url = new URL(window.location.href);
             url.searchParams.delete('view');
-            window.history.pushState({}, '', url.pathname === '/admin' ? '/' : url.pathname + (url.search ? url.search : ''));
+            const storeHome = import.meta.env.BASE_URL || '/';
+            window.history.pushState({}, '', url.pathname.endsWith('/admin') ? storeHome : url.pathname + (url.search ? url.search : ''));
           }}
         />
       );
@@ -358,7 +359,8 @@ function Home() {
           setViewMode('store');
           const url = new URL(window.location.href);
           url.searchParams.delete('view');
-          window.history.pushState({}, '', url.pathname === '/admin' ? '/' : url.pathname + (url.search ? url.search : ''));
+          const storeHome = import.meta.env.BASE_URL || '/';
+          window.history.pushState({}, '', url.pathname.endsWith('/admin') ? storeHome : url.pathname + (url.search ? url.search : ''));
         }}
         onLockSession={() => {
           setIsAdminAuthenticated(false);
@@ -1792,7 +1794,7 @@ function AdminRouteWrapper() {
           } catch {}
         }}
         onExit={() => {
-          window.location.href = '/';
+          window.location.href = import.meta.env.BASE_URL || '/';
         }}
       />
     );
@@ -1801,7 +1803,7 @@ function AdminRouteWrapper() {
   return (
     <AdminDashboard
       onExitToStore={() => {
-        window.location.href = '/';
+        window.location.href = import.meta.env.BASE_URL || '/';
       }}
       onLockSession={() => {
         setIsAdminAuthenticated(false);
@@ -1823,12 +1825,14 @@ function Router() {
   );
 }
 
+const appBase = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CatalogProvider>
         <TooltipProvider>
-          <WouterRouter>
+          <WouterRouter base={appBase}>
             <Router />
           </WouterRouter>
           <Toaster />
