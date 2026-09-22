@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useCatalog } from '@/context/CatalogContext';
+import { resolveImagePath } from '@/lib/utils';
 import { ProductFormModal } from './ProductFormModal';
 import { StoreSettingsTab } from './StoreSettingsTab';
 import type { CatalogProduct, ProductCategory } from '@/data/catalog';
@@ -128,10 +129,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
             <img
-              src="/assets/logo.png"
+              src={resolveImagePath('/assets/logo.png')}
               alt="نجم عدن"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo.png';
+                (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
               }}
               className="h-8 sm:h-9 w-auto object-contain drop-shadow-[0_0_12px_rgba(212,175,55,0.3)]"
             />
@@ -386,10 +387,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <td className="py-3 px-4">
                             <div className="relative h-12 w-12 rounded-xl bg-[#0B0F17] border border-slate-800 overflow-hidden flex items-center justify-center p-1">
                               <img
-                                src={product.images[0]}
+                                src={resolveImagePath(product.images[0])}
                                 alt={product.title}
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/logo3.jpg';
+                                  (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
                                 }}
                                 className="h-full w-full object-contain"
                               />
@@ -514,10 +515,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <div className="flex items-center gap-3">
                         <div className="relative h-16 w-16 shrink-0 rounded-xl bg-[#0B0F17] border border-slate-800 overflow-hidden flex items-center justify-center p-1">
                           <img
-                            src={product.images[0]}
+                            src={resolveImagePath(product.images[0])}
                             alt={product.title}
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/logo3.jpg';
+                              (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
                             }}
                             className="h-full w-full object-contain"
                           />

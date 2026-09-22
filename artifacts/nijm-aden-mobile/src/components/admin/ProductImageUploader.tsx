@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { resolveImagePath } from '@/lib/utils';
 import {
   UploadCloud,
   Camera,
@@ -189,11 +190,11 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
 
             {/* The Image Itself */}
             <img
-              src={value}
+              src={resolveImagePath(value)}
               alt="معاينة جهاز نجم عدن"
               className="relative z-10 max-h-full max-w-full object-contain mx-auto transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo3.jpg';
+                (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
               }}
             />
 

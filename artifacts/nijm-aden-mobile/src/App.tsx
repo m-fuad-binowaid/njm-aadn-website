@@ -49,6 +49,7 @@ import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { CatalogProvider, useCatalog } from '@/context/CatalogContext';
 import { AdminPinGate } from '@/components/admin/AdminPinGate';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { resolveImagePath } from '@/lib/utils';
 
 const queryClient = new QueryClient();
 
@@ -628,10 +629,10 @@ function Home() {
               <div className="flex justify-center w-full mt-6 md:mt-0">
                 <div className="relative before:absolute before:-inset-2 before:bg-gradient-to-r before:from-amber-500/10 before:to-yellow-600/10 before:rounded-3xl before:blur-xl before:-z-10 w-full max-w-md mx-auto">
                   <img
-                    src="/packaging.jpg"
+                    src={resolveImagePath('/packaging.jpg')}
                     alt="بوكس التغليف الملكي نجم عدن"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/assets/packaging.jpeg';
+                      (e.target as HTMLImageElement).src = resolveImagePath('/assets/packaging.jpeg');
                     }}
                     className="w-full max-w-md mx-auto rounded-2xl object-cover border border-slate-800/80 shadow-[0_15px_30px_rgba(0,0,0,0.6)]"
                   />
@@ -855,8 +856,11 @@ function BrandLogo({
   return (
     <div className={`relative flex items-center group cursor-pointer ${className}`}>
       <img
-        src="/assets/logo.png"
+        src={resolveImagePath('/assets/logo.png')}
         alt="نجم عدن موبايل"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
+        }}
         className="h-10 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_14px_rgba(212,175,55,0.45)]"
       />
     </div>
@@ -1085,10 +1089,10 @@ function MobileHero({
 
               {/* Showcase Image directly matching requested spec */}
               <img
-                src="/logo3.jpg"
+                src={resolveImagePath('/logo3.jpg')}
                 alt="iPhone 18 Pro Max Burgundy"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/assets/logo3.jpg';
+                  (e.target as HTMLImageElement).src = resolveImagePath('/assets/logo3.jpg');
                 }}
                 className="w-full max-w-[280px] sm:max-w-[340px] mx-auto object-contain drop-shadow-[0_15px_35px_rgba(159,18,57,0.25)] relative z-10"
               />
@@ -1167,13 +1171,13 @@ function MobileProductCard({
         {/* IMAGE: Clean centered device photo on a subtle dark elevated pad */}
         <div className="relative flex items-center justify-center bg-[#181F2E]/50 rounded-xl mb-2.5 border border-slate-800/40 overflow-hidden">
           <img
-            src={product.images[0]}
+            src={resolveImagePath(product.images[0])}
             alt={cleanTitle}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/assets/packaging.jpeg';
+              (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
             }}
             className={`w-full h-36 mx-auto rounded-xl transition-transform duration-300 group-hover:scale-105 ${
-              product.images[0].includes('packaging')
+              product.images[0]?.includes('packaging')
                 ? 'object-cover'
                 : 'object-contain p-2.5 mix-blend-multiply dark:mix-blend-normal'
             }`}
@@ -1342,8 +1346,11 @@ function MobileCartBottomSheet({
                   {/* Thumbnail */}
                   <div className="h-14 w-14 rounded-lg bg-[#121722] border border-slate-700/80 p-1 flex items-center justify-center shrink-0">
                     <img
-                      src={item.product.images[0]}
+                      src={resolveImagePath(item.product.images[0])}
                       alt={item.product.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
+                      }}
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
@@ -1633,10 +1640,10 @@ function ProductDetailsModal({
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#121722]">
                   <div className="animate-logo-breath opacity-40">
                     <img
-                      src="/assets/logo.png"
+                      src={resolveImagePath('/assets/logo.png')}
                       alt="تحميل"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/logo.png';
+                        (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
                       }}
                       className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(212,175,55,0.35)]"
                     />
@@ -1645,9 +1652,12 @@ function ProductDetailsModal({
                 </div>
               )}
               <img
-                src={product.images[activeImgIndex] || product.images[0]}
+                src={resolveImagePath(product.images[activeImgIndex] || product.images[0])}
                 alt={product.title}
                 onLoad={() => setImgLoaded(true)}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
+                }}
                 className={`max-h-full max-w-full object-contain transition-all duration-300 ${
                   zoomed ? 'scale-150 cursor-zoom-out' : ''
                 } ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
@@ -1675,7 +1685,14 @@ function ProductDetailsModal({
                         : 'border-slate-800 opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="" className="h-full w-full object-contain" />
+                    <img
+                      src={resolveImagePath(img)}
+                      alt=""
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
+                      }}
+                      className="h-full w-full object-contain"
+                    />
                   </button>
                 ))}
               </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveImagePath } from '@/lib/utils';
 
 interface LogoLoaderProps {
   fullscreen?: boolean;
@@ -20,10 +21,10 @@ export function LogoLoader({
         {/* Branded Logo with Breathing Scale and Ambient Glow */}
         <div className="relative animate-logo-breath">
           <img
-            src="/assets/logo.png"
+            src={resolveImagePath('/assets/logo.png')}
             alt="نجم عدن موبايل"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/logo.png';
+              (e.target as HTMLImageElement).src = resolveImagePath('/logo3.jpg');
             }}
             className="h-16 sm:h-20 w-auto object-contain drop-shadow-[0_0_20px_rgba(212,175,55,0.35)]"
           />
