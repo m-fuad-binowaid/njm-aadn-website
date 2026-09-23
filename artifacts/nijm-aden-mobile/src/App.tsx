@@ -78,9 +78,19 @@ const CATEGORY_ITEMS: { key: ProductCategory; label: string }[] = [
   { key: 'إكسسوارات وحماية', label: 'إكسسوارات وحماية' },
 ];
 
+// Helper to clean and format WhatsApp numbers for Yemen (+967 778 875 758)
+function cleanWhatsAppNumber(phone?: string): string {
+  if (!phone) return '967778875758';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 9 && digits.startsWith('77')) {
+    return `967${digits}`;
+  }
+  return digits || '967778875758';
+}
+
 // Helper to construct formatted Arabic WhatsApp URL for cart
 function buildCartWhatsAppUrl(items: InquiryCartItem[], customNote?: string, customPhone?: string): string {
-  const phone = customPhone || STORE_CONTACTS.whatsapp2 || STORE_CONTACTS.whatsapp1;
+  const phone = cleanWhatsAppNumber(customPhone || STORE_CONTACTS.whatsapp1);
   let text = `السلام عليكم ورحمة الله وبركاته،\nأود الاستفسار وتأكيد التوفر والتسعيرة للمنتجات التالية من *نجم عدن موبايل*:\n\n`;
 
   items.forEach((item, index) => {
@@ -107,7 +117,7 @@ function buildCartWhatsAppUrl(items: InquiryCartItem[], customNote?: string, cus
 
 // Helper to construct WhatsApp URL for single product direct inquiry
 function buildSingleProductWhatsAppUrl(product: CatalogProduct, capacity?: string, customPhone?: string): string {
-  const phone = customPhone || STORE_CONTACTS.whatsapp1;
+  const phone = cleanWhatsAppNumber(customPhone || STORE_CONTACTS.whatsapp1);
   const chosenCapacity = capacity || product.defaultCapacity;
   let text = `السلام عليكم ورحمة الله،\nأود الاستفسار الفوري عن توفر وسعر الجهاز التالي في نجم عدن موبايل:\n\n`;
   text += `*${product.title}*\n`;
@@ -124,8 +134,8 @@ function buildSingleProductWhatsAppUrl(product: CatalogProduct, capacity?: strin
 
 // Helper for direct WhatsApp general chat
 function openDirectWhatsApp(message?: string, customPhone?: string) {
-  const phone = customPhone || STORE_CONTACTS.whatsapp1;
-  const text = message || 'السلام عليكم، أود الاستفسار عن الأجهزة والعروض المتوفرة في صالة نجم عدن موبايل.';
+  const phone = cleanWhatsAppNumber(customPhone || STORE_CONTACTS.whatsapp1);
+  const text = message || 'السلام عليكم ورحمة الله، أود الاستفسار عن الأجهزة والعروض المتوفرة في صالة نجم عدن موبايل.';
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 }
 
@@ -396,10 +406,10 @@ function Home() {
           </div>
 
           <a
-            href={`tel:${settings.phone1 || STORE_CONTACTS.phone1}`}
+            href={`tel:${STORE_CONTACTS.phone1}`}
             className="flex items-center gap-1 text-[#FFF3C4] hover:text-[#D4AF37] transition-colors shrink-0"
           >
-            <Phone size={12} className="text-[#D4AF37]" /> {settings.phone1 || STORE_CONTACTS.phone1}
+            <Phone size={12} className="text-[#D4AF37]" /> {STORE_CONTACTS.phone1Display}
           </a>
         </div>
       </div>
@@ -420,13 +430,19 @@ function Home() {
         searchInputRef={searchInputRef}
         cartCount={totalCartCount}
         onOpenCart={() => setIsCartOpen(true)}
+        whatsappNumber={settings.whatsapp1 || STORE_CONTACTS.whatsapp1}
       />
 
       <main className="w-full pb-28">
         {/* 3. Mobile Hero Section (Vertical Mobile Stack - Zero Black Voids) */}
         <MobileHero
           onExploreCatalog={scrollToCatalog}
-          onDirectInquiry={() => openDirectWhatsApp()}
+          onDirectInquiry={() =>
+            openDirectWhatsApp(
+              'السلام عليكم ورحمة الله، أود الاستفسار والتسعير الفوري للأجهزة المتوفرة في نجم عدن موبايل.',
+              settings.whatsapp1 || STORE_CONTACTS.whatsapp1
+            )
+          }
         />
 
         {/* 4. Horizontal Swipe Category Pills (Sticky Navigation) */}
@@ -661,7 +677,12 @@ function Home() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => openDirectWhatsApp('السلام عليكم، أود زيارة المعرض في ردسي مول، ما هي الأجهزة المتوفرة اليوم؟', settings.whatsapp1)}
+                  onClick={() =>
+                    openDirectWhatsApp(
+                      'السلام عليكم، أود زيارة المعرض في ردسي مول، ما هي الأجهزة المتوفرة اليوم؟',
+                      settings.whatsapp1 || STORE_CONTACTS.whatsapp1
+                    )
+                  }
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A2232] border border-slate-700 px-4 py-2.5 text-xs font-bold text-white hover:border-[#D4AF37] hover:bg-[#20293D] transition-colors"
                 >
                   <MessageCircle size={15} className="text-[#25D366]" /> تأكيد التوفر قبل الزيارة
@@ -677,13 +698,18 @@ function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800/60">
             <BrandLogo />
-            <div className="flex items-center gap-4 text-xs font-bold text-slate-300">
-              <a href={`tel:${settings.phone1 || STORE_CONTACTS.phone1}`} className="hover:text-[#D4AF37] transition-colors">
-                هاتف: {settings.phone1 || STORE_CONTACTS.phone1}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-bold text-slate-300">
+              <a href={`tel:${STORE_CONTACTS.phone1}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1">
+                <Phone size={13} className="text-[#D4AF37]" /> هاتف: {STORE_CONTACTS.phone1Display}
               </a>
               <span className="text-[#D4AF37]">•</span>
-              <a href={`tel:${settings.phone2 || STORE_CONTACTS.phone2}`} className="hover:text-[#D4AF37] transition-colors">
-                هاتف: {settings.phone2 || STORE_CONTACTS.phone2}
+              <a
+                href={`https://wa.me/${cleanWhatsAppNumber(settings.whatsapp1 || STORE_CONTACTS.whatsapp1)}?text=${encodeURIComponent('السلام عليكم ورحمة الله، أود الاستفسار من مبيعات نجم عدن موبايل.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#25D366] transition-colors flex items-center gap-1.5"
+              >
+                <MessageCircle size={14} className="text-[#25D366]" /> واتساب: {STORE_CONTACTS.phone1Intl}
               </a>
             </div>
           </div>
@@ -707,6 +733,19 @@ function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Floating WhatsApp Action Button (Fixed Mobile & Desktop) */}
+      <a
+        href={`https://wa.me/${cleanWhatsAppNumber(settings.whatsapp1 || STORE_CONTACTS.whatsapp1)}?text=${encodeURIComponent('السلام عليكم ورحمة الله، أود الاستفسار والتسعير الفوري للأجهزة المتوفرة في نجم عدن موبايل.')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="floating-whatsapp"
+        aria-label="تواصل فوري عبر الواتساب"
+        title="تواصل فوري عبر واتساب نجم عدن"
+      >
+        <MessageCircle size={20} className="fill-white shrink-0" />
+        <span className="font-black">واتساب مباشر</span>
+      </a>
 
       {/* ============================================================== */}
       {/* 9. THUMB-ZONE NAVIGATION & APP DOCK (CRITICAL FOR MOBILE)      */}
@@ -766,7 +805,12 @@ function Home() {
         {/* 4) واتساب المبيعات (High-contrast WhatsApp button for instant 1-tap support) */}
         <button
           type="button"
-          onClick={() => openDirectWhatsApp()}
+          onClick={() =>
+            openDirectWhatsApp(
+              'السلام عليكم ورحمة الله، أود الاستفسار عن الأجهزة والعروض المتوفرة في صالة نجم عدن موبايل.',
+              settings.whatsapp1 || STORE_CONTACTS.whatsapp1
+            )
+          }
           className="dock-item-btn text-[#25D366] hover:text-[#20BA59]"
           aria-label="واتساب المبيعات"
         >
@@ -788,7 +832,7 @@ function Home() {
             onUpdateQuantity={handleUpdateQuantity}
             onRemoveItem={handleRemoveFromCart}
             onClearCart={handleClearCart}
-            whatsappNumber={settings.whatsapp2 || settings.whatsapp1}
+            whatsappNumber={settings.whatsapp1 || STORE_CONTACTS.whatsapp1}
           />,
           document.body
         )}
@@ -880,6 +924,7 @@ function MobileHeader({
   searchInputRef,
   cartCount,
   onOpenCart,
+  whatsappNumber,
 }: {
   isDrawerOpen: boolean;
   onToggleDrawer: () => void;
@@ -890,6 +935,7 @@ function MobileHeader({
   searchInputRef: React.RefObject<HTMLInputElement | null>;
   cartCount: number;
   onOpenCart: () => void;
+  whatsappNumber?: string;
 }) {
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-[#0A0D14]/85 border-b border-slate-800/80 transition-all">
@@ -954,7 +1000,7 @@ function MobileHeader({
 
             {/* WhatsApp Quick Support Button */}
             <a
-              href={`https://wa.me/${STORE_CONTACTS.whatsapp1}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار والدعم المباشر من مبيعات نجم عدن موبايل.')}`}
+              href={`https://wa.me/${cleanWhatsAppNumber(whatsappNumber || STORE_CONTACTS.whatsapp1)}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار والدعم المباشر من مبيعات نجم عدن موبايل.')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-[#25D366]/15 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366] hover:text-white active:scale-95 transition-all text-xs font-black shadow-sm"
@@ -1440,7 +1486,7 @@ function MobileCartBottomSheet({
               <span>إرسال الاستفسار والتسعيرة عبر الواتساب ({totalItems})</span>
             </button>
             <p className="mt-1.5 text-center text-[10px] text-slate-400">
-              سيتم فتح محادثة مباشرة مع مبيعات نجم عدن موبايل: {STORE_CONTACTS.phone1}
+              سيتم فتح محادثة مباشرة مع مبيعات نجم عدن موبايل: {STORE_CONTACTS.phone1Intl} ({STORE_CONTACTS.phone1Display})
             </p>
           </div>
         )}
@@ -1548,18 +1594,18 @@ function MobileSideDrawer({
         {/* Drawer Bottom Actions */}
         <div className="p-4 border-t border-slate-800 bg-[#0F131C] space-y-2">
           <a
-            href={`https://wa.me/${STORE_CONTACTS.whatsapp1}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن الأجهزة المتوفرة في نجم عدن موبايل.')}`}
+            href={`https://wa.me/${cleanWhatsAppNumber(STORE_CONTACTS.whatsapp1)}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن الأجهزة المتوفرة في نجم عدن موبايل.')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] py-3 text-xs font-black text-white shadow hover:bg-[#20BA59] transition-all"
           >
-            <MessageCircle size={16} /> واتساب المبيعات: {STORE_CONTACTS.phone1}
+            <MessageCircle size={16} /> واتساب المبيعات: {STORE_CONTACTS.phone1Display}
           </a>
           <a
-            href={`tel:${STORE_CONTACTS.phone2}`}
+            href={`tel:${STORE_CONTACTS.phone1}`}
             className="flex items-center justify-center gap-2 w-full rounded-xl border border-slate-700 bg-slate-800/80 py-2 text-xs font-bold text-slate-200 hover:border-[#D4AF37] hover:text-white transition-colors"
           >
-            <Phone size={14} className="text-[#D4AF37]" /> اتصال بالفرع: {STORE_CONTACTS.phone2}
+            <Phone size={14} className="text-[#D4AF37]" /> اتصال بالفرع: {STORE_CONTACTS.phone1Display}
           </a>
           {onOpenAdmin && (
             <button

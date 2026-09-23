@@ -36,7 +36,29 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const stored = localStorage.getItem(STORAGE_SETTINGS_KEY);
       if (stored) {
-        return { ...DEFAULT_STORE_SETTINGS, ...JSON.parse(stored) };
+        const parsed = JSON.parse(stored);
+        // Automatically migrate previous outdated phone numbers
+        if (
+          parsed.whatsapp1 === '96777887578' ||
+          parsed.whatsapp1 === '77887578' ||
+          parsed.whatsapp1 === '96777883537'
+        ) {
+          parsed.whatsapp1 = '967778875758';
+        }
+        if (
+          parsed.whatsapp2 === '96777883537' ||
+          parsed.whatsapp2 === '96777887578' ||
+          parsed.whatsapp2 === '77883537'
+        ) {
+          parsed.whatsapp2 = '967778875758';
+        }
+        if (parsed.phone1 === '77887578' || parsed.phone1 === '77883537') {
+          parsed.phone1 = '778875758';
+        }
+        if (parsed.phone2 === '77883537' || parsed.phone2 === '77887578') {
+          parsed.phone2 = '778875758';
+        }
+        return { ...DEFAULT_STORE_SETTINGS, ...parsed };
       }
     } catch (e) {
       console.error('Error loading settings from localStorage', e);

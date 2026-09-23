@@ -33,10 +33,12 @@ export type CatalogProduct = {
 };
 
 export const STORE_CONTACTS = {
-  phone1: '77887578',
-  phone2: '77883537',
-  whatsapp1: '96777887578',
-  whatsapp2: '96777883537',
+  phone1: '778875758',
+  phone1Display: '778 875 758',
+  phone1Intl: '+967 778 875 758',
+  phone2: '778875758',
+  whatsapp1: '967778875758',
+  whatsapp2: '967778875758',
   location: 'عدن - جولة كالتكس - ردسي مول - البوابة الرئيسية',
   workingHours: 'يومياً من 9:00 صباحاً حتى 11:00 مساءً',
 };

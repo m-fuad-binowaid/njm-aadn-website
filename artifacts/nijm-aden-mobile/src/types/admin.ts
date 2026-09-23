@@ -12,10 +12,10 @@ export interface StoreSettings {
 }
 
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
-  phone1: '77887578',
-  phone2: '77883537',
-  whatsapp1: '96777887578',
-  whatsapp2: '96777883537',
+  phone1: '778875758',
+  phone2: '778875758',
+  whatsapp1: '967778875758',
+  whatsapp2: '967778875758',
   location: 'عدن - جولة كالتكس - ردسي مول - البوابة الرئيسية',
   workingHours: 'يومياً من 9:00 صباحاً حتى 11:00 مساءً',
   announcementText: 'أجهزة أصلية معتمدة • فحص 30 نقطة • ردسي مول - عدن • توصيل فوري',

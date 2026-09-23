@@ -70,12 +70,12 @@ export const StoreSettingsTab: React.FC = () => {
                   onChange={(e) =>
                     setFormState({ ...formState, whatsapp1: e.target.value })
                   }
-                  placeholder="96777887578"
+                  placeholder="967778875758"
                   className="w-full rounded-xl border border-slate-700/80 bg-[#0B0F17] px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
               <span className="text-[10px] text-slate-500 mt-1 block">
-                تأكد من كتابة مفتاح الدولة كاملاً (مثال: 96777887578)
+                تأكد من كتابة مفتاح الدولة كاملاً (مثال: 967778875758)
               </span>
             </div>
 
@@ -91,12 +91,12 @@ export const StoreSettingsTab: React.FC = () => {
                   onChange={(e) =>
                     setFormState({ ...formState, whatsapp2: e.target.value })
                   }
-                  placeholder="96777883537"
+                  placeholder="967778875758"
                   className="w-full rounded-xl border border-slate-700/80 bg-[#0B0F17] px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
               <span className="text-[10px] text-slate-500 mt-1 block">
-                مخصص لاستقبال استفسارات السلة المتكاملة وقسم المبيعات
+                مخصص لاستقبال استفسارات السلة المتكاملة وقسم المبيعات (مثال: 967778875758)
               </span>
             </div>
           </div>
@@ -113,7 +113,7 @@ export const StoreSettingsTab: React.FC = () => {
                 onChange={(e) =>
                   setFormState({ ...formState, phone1: e.target.value })
                 }
-                placeholder="77887578"
+                placeholder="778875758"
                 className="w-full rounded-xl border border-slate-700/80 bg-[#0B0F17] px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
@@ -129,7 +129,7 @@ export const StoreSettingsTab: React.FC = () => {
                 onChange={(e) =>
                   setFormState({ ...formState, phone2: e.target.value })
                 }
-                placeholder="77883537"
+                placeholder="778875758"
                 className="w-full rounded-xl border border-slate-700/80 bg-[#0B0F17] px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
